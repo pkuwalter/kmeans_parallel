@@ -11,8 +11,8 @@ inline float dist_square(int dimension, float *p1, float *p2) {
 }
 
 __global__
-void nearest_cluster(float *points, float *clusters, int num_points, int num_coords,
-		int num_clusters, int *membership, int *membership_changes, int *clusters_size) {
+void nearest_cluster(float *points, float *clusters, int num_points, int num_coords,int num_clusters,
+		float *new_clusters, int *membership, int *membership_changes, int *clusters_size) {
 
 	int obj_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -38,19 +38,32 @@ void nearest_cluster(float *points, float *clusters, int num_points, int num_coo
 	}
 }
 
+inline void checkCudaError(cudaError_t error) {
+	if (error != cudaSuccess)
+	{
+		printf("cuda error code %d, line(%d): %s\n", error, __LINE__, cudaGetErrorString(error));
+		exit(EXIT_FAILURE);
+	}
+}
+
 float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 			float threshold, int *membership, int *iterations) {
 
 	// initialization
 	int i, j;
-//	float **retval;
-//	retval = (float**) malloc(num_clusters * sizeof(float*));
-//	assert(retval);
-//	retval[0] = (float*) malloc(num_clusters * num_coords * sizeof(float));
-//	assert(retval[0]);
-//	for (i = 1; i < num_clusters; i++) {
-//		retval[i] = retval[i - 1] + num_coords;
-//	}
+	float **retval;
+	retval = (float**) malloc(num_clusters * sizeof(float*));
+	assert(retval);
+	retval[0] = (float*) malloc(num_clusters * num_coords * sizeof(float));
+	assert(retval[0]);
+	for (i = 1; i < num_clusters; i++) {
+		retval[i] = retval[i - 1] + num_coords;
+	}
+
+	// randomly choose initial clusters
+    for (i=0; i < num_clusters; i++) {
+    	memcpy(retval[i], points[i], num_coords * sizeof(float));
+    }
 
 	memset (membership, -1, sizeof(membership));
 
@@ -66,57 +79,58 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 		clusters[i] = clusters[i - 1] + num_coords;
 	}
 
-	// randomly choose initial clusters
-    for (i=0; i < num_clusters; i++) {
-    	memcpy(clusters[i], points[i], num_coords * sizeof(float));
-    }
-
 	// Cuda device memory allocation
 
     float *device_points;
 	float *device_clusters;
+	float *device_new_clusters;
 	int *device_membership;
 	int *device_membership_changes;
 	int *device_clusters_size;
 
-	checkCuda(cudaMalloc(&device_points, num_points * num_coords * sizeof(float)));
-	checkCuda(cudaMalloc(&device_clusters, num_clusters * num_coords * sizeof(float)));
-	checkCuda(cudaMalloc(&device_membership, num_points * sizeof(int)));
-	checkCuda(cudaMalloc(&device_membership_changes, sizeof(int)));
-	checkCuda(cudaMalloc(&device_clusters_size, num_clusters * sizeof(int)));
+	checkCudaError(cudaMalloc(&device_points, num_points * num_coords * sizeof(float)));
+	checkCudaError(cudaMalloc(&device_clusters, num_clusters * num_coords * sizeof(float)));
+	checkCudaError(cudaMalloc(&device_new_clusters, num_clusters * num_coords * sizeof(float)));
+	checkCudaError(cudaMalloc(&device_membership, num_points * sizeof(int)));
+	checkCudaError(cudaMalloc(&device_membership_changes, sizeof(int)));
+	checkCudaError(cudaMalloc(&device_clusters_size, num_clusters * sizeof(int)));
 
-	checkCuda(cudaMemcpy(device_points, points[0], num_points * num_coords * sizeof(float),	cudaMemcpyHostToDevice));
-	checkCuda(cudaMemcpy(device_membership, membership, num_points * sizeof(int), cudaMemcpyHostToDevice));
+	checkCudaError(cudaMemcpy(device_points, points[0],num_points * num_coords * sizeof(float),	cudaMemcpyHostToDevice));
+	checkCudaError(cudaMemcpy(device_membership, membership, num_points * sizeof(int), cudaMemcpyHostToDevice));
 
 	const unsigned int dimBlock = 128;
 	const unsigned int dimGrid = (num_points - 1) / dimBlock + 1;
 
 	// K-mean calculation
 	int iter = 1;
-//	int membership_changes = num_points;
+	int membership_changes = num_points;
 	while (((float) membership_changes / (float) num_points > threshold) && (iter++ < 500)) {
 		membership_changes = 0;
 
-		checkCuda(cudaMemcpy(device_clusters, clusters[0],
-				num_clusters * num_coords * sizeof(float), cudaMemcpyHostToDevice));
+		// initialize
+		checkCudaError(cudaMemcpy(device_clusters, retval[0], num_clusters * num_coords * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaError(cudaMemcpy(device_new_clusters, clusters[0], num_clusters * num_coords * sizeof(float), cudaMemcpyHostToDevice));
+		checkCudaError(cudaMemcpy(device_clusters_size, clusters_size, num_clusters * sizeof(int), cudaMemcpyHostToDevice));
 
 		// call kernel function
 		nearest_cluster<<<dimGrid, dimBlock>>>
-		(device_points, device_clusters, num_points, num_coords,
-				num_clusters, device_membership, device_membership_changes, device_clusters_size);
+		(device_points, device_clusters, num_points, num_coords, num_clusters, device_new_clusters,
+				device_membership, device_membership_changes, device_clusters_size);
 
 		cudaDeviceSynchronize();
-		cudaError_t e = cudaGetLastError();
-		if (e != cudaSuccess) {
-			fprintf(stderr, "CUDA Error %d: %s\n", e, cudaGetErrorString(e));
-			exit(1);
-		}
+		checkCudaError(cudaGetLastError());
+
+		checkCudaError(cudaMemcpy(clusters[0], device_new_clusters, num_clusters * num_coords * sizeof(float), cudaMemcpyDeviceToHost));
+		checkCudaError(cudaMemcpy(membership, device_membership, num_points * sizeof(int), cudaMemcpyDeviceToHost));
+		checkCudaError(cudaMemcpy(&membership_changes, device_membership_changes, sizeof(int), cudaMemcpyDeviceToHost));
+		checkCudaError(cudaMemcpy(clusters_size, device_clusters_size, num_clusters * sizeof(int), cudaMemcpyDeviceToHost));
+
 
 		// calculate new cluster centers
 		for (i = 0; i < num_clusters; i++) {
 			for (j = 0; j < num_coords; j++) {
 				if (clusters_size[i] > 0) {
-					clusters[i][j] = clusters[i][j] / clusters_size[i];
+					retval[i][j] = clusters[i][j] / clusters_size[i];
 				}
 				clusters[i][j] = 0.0;
 			}
