@@ -16,26 +16,31 @@ void nearest_cluster(float *points, float *clusters, int num_points, int num_coo
 
 	int obj_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-	int new_idx = 0;
-	float dist, min_dist = 3.40282e+38;
+	if (obj_idx < num_points) {
+		int new_cluster_idx = 0;
+		float dist, min_dist = 3.40282e+38;
 
-	int i;
-	for (i = 0; i < num_clusters; i++) {
-		if ((dist = dist_square(num_coords, &points[obj_idx], &clusters[i])) < min_dist) {
-			min_dist = dist;
-			new_idx = i;
+		int i;
+		for (i = 0; i < num_clusters; i++) {
+			if ((dist = dist_square(num_coords, &points[obj_idx], &clusters[i]))
+					< min_dist) {
+				min_dist = dist;
+				new_cluster_idx = i;
+			}
+		}
+
+		if (membership[obj_idx] != new_cluster_idx) {
+			membership_changes++;
+			membership[obj_idx] = new_cluster_idx;
+		}
+
+		clusters_size[new_cluster_idx]++;
+		for (i = 0; i < num_coords; i++) {
+			clusters[new_cluster_idx + i] += points[obj_idx + i];
 		}
 	}
 
-	if (membership[obj_idx] != new_idx) {
-		membership_changes++;
-		membership[obj_idx] = new_idx;
-	}
-
-	clusters_size[new_idx]++;
-	for (i = 0; i < num_coords; i++) {
-		clusters[new_idx + i] += points[obj_idx + i];
-	}
+	__syncthreads();
 }
 
 inline void checkCudaError(cudaError_t error) {
