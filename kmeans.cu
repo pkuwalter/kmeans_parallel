@@ -10,20 +10,32 @@ inline float dist_square(int dimension, float *p1, float *p2) {
 	return ans;
 }
 
-__global__ inline
-int nearest_cluster(int num_clusters, int num_coords, float *point, float **clusters) {
-	int retval = 0;
-	float dist, min_dist = numeric_limits<float>::max();
+__global__
+void nearest_cluster(float *points, float *clusters, int num_points, int num_coords,
+		int num_clusters, int *membership, int *membership_changes, int *clusters_size) {
+
+	int obj_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	int new_idx = 0;
+	float dist, min_dist = 3.40282e+38;
 
 	int i;
 	for (i = 0; i < num_clusters; i++) {
-		if ((dist = dist_square(num_coords, point, clusters[i])) < min_dist) {
+		if ((dist = dist_square(num_coords, &points[obj_idx], &clusters[i])) < min_dist) {
 			min_dist = dist;
-			retval = i;
+			new_idx = i;
 		}
 	}
 
-	return retval;
+	if (membership[obj_idx] != new_idx) {
+		membership_changes++;
+		membership[obj_idx] = new_idx;
+	}
+
+	clusters_size[new_idx]++;
+	for (i = 0; i < num_coords; i++) {
+		clusters[new_idx + i] += points[obj_idx + i];
+	}
 }
 
 float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
@@ -69,15 +81,7 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 		for (i = 0; i < num_points; i++) {
 			int cl_idx = nearest_cluster(num_clusters, num_coords, points[i], retval);
 
-			if (membership[i] != cl_idx) {
-				membership_changes ++;
-				membership[i] = cl_idx;
-			}
 
-			clusters_size[cl_idx]++;
-			for (j=0; j<num_coords; j++) {
-				clusters[cl_idx][j] += points[i][j];
-			}
 		}
 
 		// calculate new cluster centers
