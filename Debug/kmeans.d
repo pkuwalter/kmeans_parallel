@@ -88,6 +88,13 @@
     /usr/local/cuda-5.5/bin/..//include/surface_indirect_functions.h \
     /usr/local/cuda-5.5/bin/..//include/device_launch_parameters.h \
     ../kmeans.h \
+    /usr/include/c++/4.6/cstdio \
+    /usr/include/stdio.h \
+    /usr/include/libio.h \
+    /usr/include/_G_config.h \
+    /usr/include/wchar.h \
+    /usr/lib/gcc/x86_64-linux-gnu/4.6/include/stdarg.h \
+    /usr/include/x86_64-linux-gnu/bits/sys_errlist.h \
     /usr/include/c++/4.6/cstring \
     /usr/include/c++/4.6/limits \
     /usr/include/assert.h

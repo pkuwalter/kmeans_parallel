@@ -43,21 +43,16 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 
 	// initialization
 	int i, j;
-	float **retval;
-	retval = (float**) malloc(num_clusters * sizeof(float*));
-	assert(retval);
-	retval[0] = (float*) malloc(num_clusters * num_coords * sizeof(float));
-	assert(retval[0]);
-	for (i = 1; i < num_clusters; i++) {
-		retval[i] = retval[i - 1] + num_coords;
-	}
+//	float **retval;
+//	retval = (float**) malloc(num_clusters * sizeof(float*));
+//	assert(retval);
+//	retval[0] = (float*) malloc(num_clusters * num_coords * sizeof(float));
+//	assert(retval[0]);
+//	for (i = 1; i < num_clusters; i++) {
+//		retval[i] = retval[i - 1] + num_coords;
+//	}
 
 	memset (membership, -1, sizeof(membership));
-
-	// randomly choose initial clusters
-    for (i=0; i < num_clusters; i++) {
-    	memcpy(retval[i], points[i], num_coords * sizeof(float));
-    }
 
     // allocate space for temp clusters
     int *clusters_size = (int*) calloc(num_clusters, sizeof(int));
@@ -71,24 +66,57 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 		clusters[i] = clusters[i - 1] + num_coords;
 	}
 
+	// randomly choose initial clusters
+    for (i=0; i < num_clusters; i++) {
+    	memcpy(clusters[i], points[i], num_coords * sizeof(float));
+    }
+
+	// Cuda device memory allocation
+
+    float *device_points;
+	float *device_clusters;
+	int *device_membership;
+	int *device_membership_changes;
+	int *device_clusters_size;
+
+	checkCuda(cudaMalloc(&device_points, num_points * num_coords * sizeof(float)));
+	checkCuda(cudaMalloc(&device_clusters, num_clusters * num_coords * sizeof(float)));
+	checkCuda(cudaMalloc(&device_membership, num_points * sizeof(int)));
+	checkCuda(cudaMalloc(&device_membership_changes, sizeof(int)));
+	checkCuda(cudaMalloc(&device_clusters_size, num_clusters * sizeof(int)));
+
+	checkCuda(cudaMemcpy(device_points, points[0], num_points * num_coords * sizeof(float),	cudaMemcpyHostToDevice));
+	checkCuda(cudaMemcpy(device_membership, membership, num_points * sizeof(int), cudaMemcpyHostToDevice));
+
+	const unsigned int dimBlock = 128;
+	const unsigned int dimGrid = (num_points - 1) / dimBlock + 1;
+
 	// K-mean calculation
 	int iter = 1;
-	int membership_changes = num_points;
+//	int membership_changes = num_points;
 	while (((float) membership_changes / (float) num_points > threshold) && (iter++ < 500)) {
 		membership_changes = 0;
 
-		// re-allocate cluster membership
-		for (i = 0; i < num_points; i++) {
-			int cl_idx = nearest_cluster(num_clusters, num_coords, points[i], retval);
+		checkCuda(cudaMemcpy(device_clusters, clusters[0],
+				num_clusters * num_coords * sizeof(float), cudaMemcpyHostToDevice));
 
+		// call kernel function
+		nearest_cluster<<<dimGrid, dimBlock>>>
+		(device_points, device_clusters, num_points, num_coords,
+				num_clusters, device_membership, device_membership_changes, device_clusters_size);
 
+		cudaDeviceSynchronize();
+		cudaError_t e = cudaGetLastError();
+		if (e != cudaSuccess) {
+			fprintf(stderr, "CUDA Error %d: %s\n", e, cudaGetErrorString(e));
+			exit(1);
 		}
 
 		// calculate new cluster centers
 		for (i = 0; i < num_clusters; i++) {
 			for (j = 0; j < num_coords; j++) {
 				if (clusters_size[i] > 0) {
-					retval[i][j] = clusters[i][j] / clusters_size[i];
+					clusters[i][j] = clusters[i][j] / clusters_size[i];
 				}
 				clusters[i][j] = 0.0;
 			}

@@ -15,6 +15,7 @@
 #endif
 
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <assert.h>
