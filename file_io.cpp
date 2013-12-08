@@ -1,10 +1,3 @@
-/*
- * file_io.cpp
- *
- *  Created on: Nov 30, 2013
- *      Author: yige
- */
-
 #include "file_io.h";
 
 float** file_read(char *filename, int  *num_points, int  *num_coords) {
@@ -52,7 +45,6 @@ float** file_read(char *filename, int  *num_points, int  *num_coords) {
 	infile.clear();
 	infile.seekg(0);
 
-	int idx;
 	int i = 0, j;
 
 	while (getline(infile, line)) {

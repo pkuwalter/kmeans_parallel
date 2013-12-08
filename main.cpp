@@ -1,12 +1,3 @@
-/*
- * main.cpp
- *
- *  Created on: Dec 1, 2013
- *      Author: yige
- *
- * A sequential c++ K-mean program on CPU.
- */
-
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
@@ -14,9 +5,6 @@
 #include "file_io.h"
 #include "kmeans.h"
 
-/*
- * print usage
- */
 static void usage(char *argv0, float threshold) {
     char *help =
         "Usage: %s [switches] -i filename -n num_clusters\n"

@@ -1,10 +1,3 @@
-/*
- * kmeans.h
- *
- *  Created on: Nov 30, 2013
- *      Author: yige
- */
-
 #ifndef KMEANS_H_
 #define KMEANS_H_
 
@@ -19,22 +12,9 @@
 #include <cstring>
 #include <limits>
 #include <assert.h>
+//#include <cuda.h>
 
 using namespace std;
-
-/*
- * calculation for Euclidean distance between two points
- * @param dimension dimension of point coordinates
- */
-inline float dist_square(int dimension, float *p1, float *p2);
-
-/*
- * get the nearest cluster index of a given point, from the clusters
- * @param num_clusters number of clusters
- * @param point the given point
- * @param clusters previous cluster centers
- */
-inline int nearest_cluster(int num_clusters, int num_coords, float *point, float **clusters);
 
 /*
  * calculation for K-means.

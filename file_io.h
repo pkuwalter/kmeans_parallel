@@ -1,10 +1,3 @@
-/*
- * file_io.h
- *
- *  Created on: Dec 1, 2013
- *      Author: yige
- */
-
 #ifndef FILE_IO_H_
 #define FILE_IO_H_
 
