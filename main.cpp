@@ -10,19 +10,21 @@ static void usage(char *argv0, float threshold) {
         "Usage: %s [switches] -i filename -n num_clusters\n"
         "       -i filename    : file containing data to be clustered\n"
         "       -n num_clusters: number of clusters (K must > 1)\n"
-        "       -t threshold   : threshold value (default %.4f)\n";
+        "       -t threshold   : threshold value (default %.4f)\n"
+				"       -c iteration   : end after iterations\n";
     fprintf(stderr, help, argv0, threshold);
     exit(-1);
 }
 
 int main(int argc, char **argv) {
 	// read flags
-    int c;
+	int c;
 	float threshold = 0.001;
-    int num_clusters = 0;
-    char *infile = NULL;
+	int iterations = 100;
+	int num_clusters = 0;
+	char *infile = NULL;
 
-    while ( (c=getopt(argc,argv,"i:n:t:"))!= EOF) {
+	while ( (c=getopt(argc,argv,"i:n:t:c:"))!= EOF) {
         switch (c) {
             case 'i': infile=optarg;
                       break;
@@ -30,12 +32,14 @@ int main(int argc, char **argv) {
                       break;
             case 'n': num_clusters = atoi(optarg);
                       break;
+            case 'c': iterations = atoi(optarg);
+											break;
             case '?': usage(argv[0], threshold);
                       break;
             default: usage(argv[0], threshold);
                       break;
         }
-    }
+	}
 
 	if (infile == 0 || num_clusters <= 1)
 		usage(argv[0], threshold);
@@ -48,17 +52,27 @@ int main(int argc, char **argv) {
 	// K-means calculation
 	int *membership = (int*) malloc(num_points * sizeof(int));
 	assert(membership);
-	int iterations;
-	float **clusters = kmeans(points, num_points, num_coords, num_clusters,
-			threshold, membership, &iterations);
 
-	free (points[0]);
+	#ifdef TIMING
+	printf("Timer start....\n");
+	int64_t start = GetTimeMius64();
+	#endif
+
+	float **clusters = kmeans(points, num_points, num_coords, num_clusters,
+			threshold, iterations, membership);
+
+	#ifdef TIMING
+	int64_t duration = GetTimeMiusFrom(start);
+	printf("K-means calculation time = %lld microseconds\n", (long long) duration);
+	#endif
+
+	free(points[0]);
 	free(points);
 
 	// write results to output file
 	file_write(infile, num_clusters, num_points, num_coords, clusters, membership);
 
-	free (membership);
-	free (clusters[0]);
+	free(membership);
+	free(clusters[0]);
 	free(clusters);
 }
