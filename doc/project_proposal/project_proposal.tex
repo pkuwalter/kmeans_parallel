@@ -31,9 +31,15 @@ errors, $$\arg\min_{S}\sum_{i=1}^{k}\sum_{x \in S_i} \parallel x -
 \section{Plan}
 We plan to use GPU and CUDA to implement the parallel version of
 k-means algorithm. For GPU, we will use NVIDIA GPU Tesla K20c to test
-and bench mark our implementation. We will also compare our
-implementation with the existing implementation we find on the
-web\cite{serban-kmeans, gpuminer}.
+and bench mark our implementation. 
+
+We will compare our implementation with two kinds of baselines:
+\begin{compactitem}
+\item{A correspondent k-means implementation on CPU.}
+\item{Some existing GPU k-means implementation we find on the Internet\cite{serban-kmeans, gpuminer}.
+}
+\end{compactitem}
+
 
 \bibliographystyle{acm}
 \bibliography{bibliography}  

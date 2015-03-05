@@ -5,6 +5,8 @@ OUT_PS=$(patsubst %.pdf,%.ps,$(OUT_PDF))
 OUT_DVI=$(patsubst %.pdf,%.dvi,$(OUT_PDF))
 RUBBER=rubber -vv -pd
 
+DEPS=*.tex *.bib
+
 all: $(OUT_PDF)
 
 $(OUT_PDF): $(DEPS)
