@@ -1,0 +1,40 @@
+\documentclass{article}
+\usepackage{amsmath, amsfonts}
+\usepackage{hyperref}
+\usepackage{breakurl}
+\usepackage{paralist}
+\begin{document}
+\title{Project Proposal}
+\author{Yige Hu and Zhiting Zhu}
+\date{}
+\maketitle
+
+\section{Problem Description}
+K-means clustering is a unsupervised learning algorithm for solving clustering
+problem. Formally, the problem states
+as follows~\cite{wiki}: Given a set of data points $\{x_i|i = 1..n\} \subseteq \mathbb{R}^d $, k-means clustering aims to partition the n data points
+in to k($\leq n$) sets S = $\{S_1, S_2, ..., S_k\}$ so as to minimize
+the within-cluster sum of squared
+errors, $$\arg\min_{S}\sum_{i=1}^{k}\sum_{x \in S_i} \parallel x -
+\mu(S_i)\parallel$$ where $\mu(S_i)$ is the mean of points in $S_i$. 
+
+\section{Standard Sequential Algorithm}
+\begin{compactitem}
+\item{Choose the number of clusters, k.}
+\item{Randomly generate k points as cluster centers.}
+\item{Assign each point to the nearest cluster center.}
+\item{Recompute the new cluster centers.}
+\item{Repeat the previous two steps until some convergence criterion
+  is met.}
+\end{compactitem}
+
+\section{Plan}
+We plan to use GPU and CUDA to implement the parallel version of
+k-means algorithm. For GPU, we will use NVIDIA GPU Tesla K20c to test
+and bench mark our implementation. We will also compare our
+implementation with the existing implementation we find on the
+web\cite{serban-kmeans, gpuminer}.
+
+\bibliographystyle{acm}
+\bibliography{bibliography}  
+\end{document}
