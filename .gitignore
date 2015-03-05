@@ -20,3 +20,6 @@
 *.log
 *.out
 *.ps
+
+kmeans-cpu
+kmeans-gpu
