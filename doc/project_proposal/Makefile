@@ -13,3 +13,6 @@ $(OUT_PDF): $(DEPS)
 	$(RUBBER) $(PROJ_NAME)
 	@grep --color undefined $(PROJ_NAME).log && notify-send --urgency=critical "WARNING: UNDEFINED REF" || true
 
+clean:
+	rubber -v -pd --clean $(PROJ_NAME)
+
