@@ -1,0 +1,102 @@
+\documentclass{article}
+\usepackage{amsmath, amsfonts}
+\usepackage{hyperref}
+\usepackage{breakurl}
+\usepackage{paralist}
+\usepackage{algpseudocode}
+\usepackage{algorithmicx}
+\usepackage{algorithm}
+\usepackage{geometry}
+\geometry{margin=1in}
+\begin{document}
+\title{Progress Report}
+\author{Yige Hu and Zhiting Zhu}
+\date{}
+\maketitle
+
+% declaration of the new block
+\algblock{ParFor}{EndParFor}
+% customising the new block
+\algnewcommand\algorithmicparfor{\textbf{parfor}}
+\algnewcommand\algorithmicpardo{\textbf{do}}
+\algnewcommand\algorithmicendparfor{\textbf{end\ parfor}}
+\algrenewtext{ParFor}[1]{\algorithmicparfor\ #1\ \algorithmicpardo}
+\algrenewtext{EndParFor}{\algorithmicendparfor}
+
+\algnewcommand\algorithmicinput{\textbf{INPUT:}}
+\algnewcommand\INPUT{\item[\algorithmicinput]}
+
+\section{Sequantial Algorithm}
+K-means clustering is a NP-hard problem in general Euclidean space d~\cite{k-means-euclidean}
+and even for instances in a plane~\cite{k-means-plane}. The sequantial
+algorithm shown here is a heuristic algorithm which does not guarantee
+to find a global optimal. 
+\begin{algorithm}
+  \caption{Sequential k-means clustering} \label{seq}
+  \begin{algorithmic}[1]
+    \INPUT k: Number of clusters. N: number of data points. d: data points 
+    \Function{seq\_k-means}{d, N, k}
+    \State Randomly generate k points as cluster centers
+    \State Assign each point to the nearest cluster center
+    \State Recompute the new cluster centers
+    \State Repeat the previous two steps until some convergence criterion
+    is met
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+Suppose n is the number of d-dimention data. m is the number of
+iteration run in this algorithm. The complexity of this algorithm is
+O(nkdm). 
+
+\section{Parallel k-means clustering}
+The obvious way to parallelize the algorithm is to parallelize the
+membership assignment part and recompute the new centroid. 
+\begin{algorithm}
+  \caption{Parallel k-means clustering} \label{par}
+  \begin{algorithmic}[1]
+    \INPUT k: Number of clusters. N: number of data points. d: data points
+    \Function{par\_k-means}{d, N, k} \label{alg:p}
+    \State Partition N data objects evenly among all threads
+    \State Randomly choose k points as cluster mean
+    \While {!(converges with respect to a threashold) and (iterations
+      $<$ MAX\_ITERATIONS)}
+    \ParFor {t = 1..p}
+    \State calculate the distance between each point and
+    cluster centroids
+    \State find the nearest centroid
+    \State change membership according to the new centroid
+    \State calculate the new centroid of each cluster
+    \EndParFor
+    \State Calculate differences between new membership assignment and
+    old membership assignment
+    \EndWhile
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+We plan to implement this algorithm using CUDA on GPU. If we have
+time, we may also consider a hybrid implementation with MPI, OpenMP
+and CUDA. 
+
+\section{Related Work}
+We found two CUDA implementations of parallel k-means
+algorithm~\cite{serban-kmeans, gpuminer}. We plan to compare their
+implementation with ours and also compare the result with other
+MPI/OpenMP implementatoins.  
+
+\section{Experiments Plan}
+We plan to test our implementation on TACC Lonestar GPU node. For correctness,
+we will compare the running result with a known correct
+implementation. For single core performance, we will test our
+implementation with one CUDA thread. But its performance is
+incomperable with single core CPU implementation as GPU runs much
+slower than CPU. For weak scaling, we will fix data points assigned to
+each CUDA block, increase number of CUDA blocks with increase of
+input size and measure total execution time and total execution time taken
+on GPU calculation. For strong scaling, we will fix the input size,
+increase the number of CUDA blocks and measure total execution
+time and total execution time taken on GPU. 
+
+\bibliographystyle{acm}
+\bibliography{bibliography}
+\end{document}
