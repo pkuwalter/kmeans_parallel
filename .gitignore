@@ -21,5 +21,9 @@
 *.out
 *.ps
 
+*.bm
+*.toc
+*.pdf
+
 kmeans-cpu
 kmeans-gpu
