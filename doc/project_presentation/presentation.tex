@@ -10,7 +10,7 @@ fleqn]{powerdot}
 \usepackage{algpseudocode}
 \usepackage{algorithmicx}
 \usepackage{algorithm}
-\title{K-Means Clustering}
+\title{K-Means Clustering on GPU}
 \author{Yige Hu and Zhiting Zhu}
 \date{}
 
@@ -62,6 +62,9 @@ fleqn]{powerdot}
     \subfloat[t][~\cite{f3}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_3.eps}}\qquad
     \subfloat[t][~\cite{f4}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_4.eps}}
   \end{figure}
+  \begin{compactitem}
+  \item{Problem size: $N$ $d$-dimentional data points, put into $K$ clusters.}
+  \end{compactitem}
 \end{slide}
 
 \begin{slide} {Sequential Algorithm}
@@ -103,9 +106,22 @@ fleqn]{powerdot}
   \end{algorithmic}
 \end{slide}
 
-\begin{slide}{Goal}
+\begin{slide}{Goals and Challenges}
   \begin{compactitem}
-    \item{Implement parallel algorithm in CUDA. GPU specific optimization}
+    \item{CUDA implementation.}
+    \item{GPU-related optimizations:}
+    \begin{compactitem}
+    \item{Control divergence;}
+    \item{Coalesced memory access;}
+    \item{Shared/constant memory usage}
+    \item{etc...}
+    \end{compactitem}
+  \item{Limitation: GPU memory size.}
+   \item{Problem size:}
+     \begin{compactitem}
+     \item{$\geq$ 600,000 points with $\geq$ 40 dimensions, $\geq$ 120 centroids;}
+     \item{Efficient memory usage to increase solvable problem size.}
+     \end{compactitem}
   \end{compactitem}
 \end{slide}
 
