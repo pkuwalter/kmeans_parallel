@@ -66,16 +66,16 @@ fleqn]{powerdot}
 
 \begin{slide} {Sequential Algorithm}
   \begin{algorithmic}[1]
-    \INPUT k: Number of clusters. N: number of d dimention data points. dp: data points 
-    \Function{seq\_k-means}{dp, N, k}
-    \State Randomly generate k points as cluster centers
-    \State Assign each point to the nearest cluster center
-    \State Recompute the new cluster centers
-    \State Repeat the previous two steps until some convergence criterion
-    is met
+    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points. 
+    \Function{seq\_k-means}{$p, N, K$}
+    \State Randomly generate $K$ points as cluster centroids $c[]$
+    \State Assign each point to the nearest cluster centroid
+    \State Recompute the new cluster centroids
+    \State Repeat the previous two steps until some termination condition met
     \EndFunction
   \end{algorithmic}
   \begin{compactitem}
+    \vspace{.5in}
     \item{Suppose the algorithm runs m iterations. Time complexity: O(Nkdm)}
   \end{compactitem}
 \end{slide}
@@ -83,21 +83,21 @@ fleqn]{powerdot}
 \begin{slide} {Parallel Algorithm}
   \footnotesize
   \begin{algorithmic}[1]
-    \INPUT k: Number of clusters. N: number of data points. d: data points
-    \Function{par\_k-means}{d, N, k} \label{alg:p}
-    \State Partition N data objects evenly among all threads
-    \State Randomly choose k points as cluster mean
-    \While {!(converges with respect to a threashold) and (iterations
-      $<$ MAX\_ITERATIONS)}
-    \ParFor {t = 1..p}
-    \State calculate the distance between each point and
-    cluster centroids
-    \State find the nearest centroid
-    \State change membership according to the new centroid
-    \State calculate the new centroid of each cluster
+    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points.
+    \Function{par\_k-means}{$p, N, K$} \label{alg:p}
+%    \State Partition N data objects evenly among all threads
+    \State Randomly choose $K$ points as cluster centroids $c[]$
+    \While {! termination\_condition}
+    \ParFor {i = 1..N}
+    \For {j = 1..K}
+    \State Compute distance between point $p(i)$ and centroid $c(j)$
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
+    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
     \EndParFor
-    \State Calculate differences between new membership assignment and
-    old membership assignment
+    \State Compute new $c[]$: divide the accumulated coords by num\_points
+    \State Recalculate termination condition
     \EndWhile
     \EndFunction  
   \end{algorithmic}
