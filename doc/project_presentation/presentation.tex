@@ -72,9 +72,10 @@ fleqn]{powerdot}
     \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points. 
     \Function{seq\_k-means}{$p, N, K$}
     \State Randomly generate $K$ points as cluster centroids $c[]$
+    \While {!termination\_condition }
     \State Assign each point to the nearest cluster centroid
     \State Recompute the new cluster centroids
-    \State Repeat the previous two steps until some termination condition met
+    \EndWhile
     \EndFunction
   \end{algorithmic}
   \begin{compactitem}
