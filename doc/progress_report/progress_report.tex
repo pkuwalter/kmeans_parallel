@@ -34,13 +34,13 @@ to find a global optimal.
 \begin{algorithm}
   \caption{Sequential k-means clustering} \label{seq}
   \begin{algorithmic}[1]
-    \INPUT k: Number of clusters. N: number of d-dimention data points. dp: data points 
-    \Function{seq\_k-means}{dp, N, k}
-    \State Randomly generate k points as cluster centers
-    \State Assign each point to the nearest cluster center
-    \State Recompute the new cluster centers
-    \State Repeat the previous two steps until some convergence criterion
-    is met
+    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points. 
+    \Function{seq\_k-means}{$p, N, K$}
+    \State Randomly generate $K$ points as cluster centroids $c[]$
+    \While {!termination\_condition }
+    \State Assign each point to the nearest cluster centroid
+    \State Recompute the new cluster centroids
+    \EndWhile
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
@@ -54,29 +54,32 @@ membership assignment part and recompute the new centroid.
 \begin{algorithm}
   \caption{Parallel k-means clustering} \label{par}
   \begin{algorithmic}[1]
-    \INPUT k: Number of clusters. N: number of data points. dp: data points
-    \Function{par\_k-means}{dp, N, k} \label{alg:p}
-    \State Partition N data objects evenly among all threads
-    \State Randomly choose k points as cluster mean
-    \While {!(converges with respect to a threashold) and (iterations
-      $<$ MAX\_ITERATIONS)}
-    \ParFor {t = 1..p}
-    \State calculate the distance between each point and
-    cluster centroids
-    \State find the nearest centroid
-    \State change membership according to the new centroid
-    \State calculate the new centroid of each cluster
+    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points.
+    \Function{par\_k-means}{$p, N, K$} \label{alg:p}
+%    \State Partition N data objects evenly among all threads
+    \State Randomly choose $K$ points as cluster centroids $c[]$
+    \While {! termination\_condition}
+    \ParFor {i = 1..N}
+    \For {j = 1..K}
+    \State Compute distance between point $p(i)$ and centroid $c(j)$
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
+    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
     \EndParFor
-    \State Calculate differences between new membership assignment and
-    old membership assignment
+    \State Compute new $c[]$: divide the accumulated coords by num\_points
+    \State Recalculate termination condition
     \EndWhile
     \EndFunction  
   \end{algorithmic}
 \end{algorithm}
 
+\section{Implementation}
 We plan to implement this algorithm using CUDA on GPU. If we have
-time, we may also consider a hybrid implementation with MPI, OpenMP
-and CUDA. 
+time, we may consider a hybrid implementation with MPI, OpenMP
+and CUDA. During implementation, we need to consider serveral
+GPU-related optimization such as control divergence, coalesced memory
+access and use of shared/constant memory.  
 
 \section{Related Work}
 We found two CUDA implementations of parallel k-means
@@ -85,9 +88,16 @@ implementation with ours and also compare the result with other
 MPI/OpenMP implementatoins.  
 
 \section{Experiments Plan}
-We plan to test our implementation on TACC Lonestar GPU node. For correctness,
+We plan to test our implementation on TACC Lonestar GPU node. We plan
+to test our implementation with more than 600,000 points each with more
+than 40 dimention each vector and in total more than 120 centroids. The
+ultimate limitation is the size of GPU memory. If
+we can use GPU memory more efficiently, we might be able to solve
+larger problem size. 
+
+For correctness testing,
 we will compare the running result with a known correct
-implementation. For single core performance, we will test our
+implementation. We will test our
 implementation with one CUDA thread. But its performance is
 incomperable with single core CPU implementation as GPU runs much
 slower than CPU. For weak scaling, we will fix data points assigned to
