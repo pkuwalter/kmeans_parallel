@@ -34,8 +34,8 @@ to find a global optimal.
 \begin{algorithm}
   \caption{Sequential k-means clustering} \label{seq}
   \begin{algorithmic}[1]
-    \INPUT k: Number of clusters. N: number of data points. d: data points 
-    \Function{seq\_k-means}{d, N, k}
+    \INPUT k: Number of clusters. N: number of d-dimention data points. dp: data points 
+    \Function{seq\_k-means}{dp, N, k}
     \State Randomly generate k points as cluster centers
     \State Assign each point to the nearest cluster center
     \State Recompute the new cluster centers
@@ -44,9 +44,9 @@ to find a global optimal.
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
-Suppose n is the number of d-dimention data. m is the number of
+Suppose m is the number of
 iteration run in this algorithm. The complexity of this algorithm is
-O(nkdm). 
+O(Nkdm). 
 
 \section{Parallel k-means clustering}
 The obvious way to parallelize the algorithm is to parallelize the
@@ -54,8 +54,8 @@ membership assignment part and recompute the new centroid.
 \begin{algorithm}
   \caption{Parallel k-means clustering} \label{par}
   \begin{algorithmic}[1]
-    \INPUT k: Number of clusters. N: number of data points. d: data points
-    \Function{par\_k-means}{d, N, k} \label{alg:p}
+    \INPUT k: Number of clusters. N: number of data points. dp: data points
+    \Function{par\_k-means}{dp, N, k} \label{alg:p}
     \State Partition N data objects evenly among all threads
     \State Randomly choose k points as cluster mean
     \While {!(converges with respect to a threashold) and (iterations
