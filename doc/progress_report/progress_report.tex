@@ -16,7 +16,7 @@
 
 % declaration of the new block
 \algblock{ParFor}{EndParFor}
-% customising the new block
+% customizing the new block
 \algnewcommand\algorithmicparfor{\textbf{parfor}}
 \algnewcommand\algorithmicpardo{\textbf{do}}
 \algnewcommand\algorithmicendparfor{\textbf{end\ parfor}}
@@ -26,17 +26,17 @@
 \algnewcommand\algorithmicinput{\textbf{INPUT:}}
 \algnewcommand\INPUT{\item[\algorithmicinput]}
 
-\section{Sequantial Algorithm}
+\section{Sequential Algorithm}
 K-means clustering is an NP-hard problem in general Euclidean space 
 $\mathbb{R}^d$~\cite{k-means-euclidean}
-and even for instances on a plane~\cite{k-means-plane}. The sequantial
+and even for instances on a plane~\cite{k-means-plane}. The sequential
 algorithm below is a heuristic algorithm which does not guarantee
 a global optimal. 
 
 \begin{algorithm}
   \caption{Sequential k-means clustering} \label{seq}
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points. 
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
     \Function{seq\_k-means}{$p, N, K$}
     \State Randomly generate $K$ points as cluster centroids $c[]$
     \While {!termination\_condition }
@@ -58,7 +58,7 @@ parts for membership assignment and recomputation on new centroids.
 \begin{algorithm}
   \caption{Parallel k-means clustering} \label{par}
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points.
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
     \Function{par\_k-means}{$p, N, K$} \label{alg:p}
 %    \State Partition N data objects evenly among all threads
     \State Randomly choose $K$ points as cluster centroids $c[]$
@@ -86,20 +86,20 @@ The work-depth model for this algorithm is: Work = O(NKdm), Depth = O(Kdm).
 \section{Implementation}
 We plan to implement this algorithm on NVidia GPUs with CUDA platform. If we have
 enough time, we may consider a hybrid implementation with MPI, OpenMP
-and CUDA. For GPU code, we need also consider serveral
+and CUDA. For GPU code, we need also consider several
 hardware-related optimizations, such as coalesced memory
 access, shared/constant memory usage and execution path divergence control.
 
 \section{Related Work}
-We found two open-souce CUDA implementations of parallel k-means
+We found two open-source CUDA implementations of parallel k-means
 algorithm~\cite{serban-kmeans, gpuminer} on the Internet. We plan to compare
 our performance with their implementation. We will also make comparison with 
-other open-souce MPI/OpenMP implementatoins.
+other open-source MPI/OpenMP implementations.
 
 \section{Experiments Plan}
 We plan to test our implementation on the TACC Lonestar GPU node. 
 The dataset should scale to more than 600,000 points, each with 
-40 dimentions or more, and to be clustered into 120 centroids at least. 
+40 dimensions or more, and to be clustered into 120 centroids at least. 
 The scalability limitation will mainly be caused by GPU memory size. If
 we can use memory in a more efficient way, we might be able to do
 computation on an even larger problem size. 
@@ -111,7 +111,7 @@ a CPU core, under the same input configuration. We expect 10x--50x speed-up
 over a single CPU core with variant input configurations.
 To get weak scalability, we fix the number of points assigned to
 each CUDA thread block, and measure execution time with an increasing number 
-of thread blocks. Thus, in this case the total input size is propotional to
+of thread blocks. Thus, in this case the total input size is proportional to
 the number of thread blocks.
 While for strong scalability, we fix the total input size and increase the 
 number of thread blocks. 

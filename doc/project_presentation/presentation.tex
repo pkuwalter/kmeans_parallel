@@ -20,7 +20,7 @@ fleqn]{powerdot}
 
 % declaration of the new block
 \algblock{ParFor}{EndParFor}
-% customising the new block
+% customizing the new block
 \algnewcommand\algorithmicparfor{\textbf{parfor}}
 \algnewcommand\algorithmicpardo{\textbf{do}}
 \algnewcommand\algorithmicendparfor{\textbf{end\ parfor}}
@@ -41,7 +41,7 @@ fleqn]{powerdot}
     \mu(S_i)\parallel$$ where $\mu(S_i)$ is the mean of points in $S_i$}
   \item{NP-hard problem for global optimal solution
     \begin{compactitem}
-    \item{In general d dimention Euclidean space even with 2 clusters~\cite{k-means-euclidean}}
+    \item{In general d dimension Euclidean space even with 2 clusters~\cite{k-means-euclidean}}
     \item{k clusters in the same plane~\cite{k-means-plane}}
     \end{compactitem}
   }
@@ -63,13 +63,13 @@ fleqn]{powerdot}
     \subfloat[t][~\cite{f4}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_4.eps}}
   \end{figure}
   \begin{compactitem}
-  \item{Problem size: $N$ $d$-dimentional data points, put into $K$ clusters.}
+  \item{Problem size: $N$ $d$-dimensional data points, put into $K$ clusters.}
   \end{compactitem}
 \end{slide}
 
 \begin{slide} {Sequential Algorithm}
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points. 
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
     \Function{seq\_k-means}{$p, N, K$}
     \State Randomly generate $K$ points as cluster centroids $c[]$
     \While {!termination\_condition }
@@ -87,7 +87,7 @@ fleqn]{powerdot}
 \begin{slide} {Parallel Algorithm}
   \footnotesize
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimentional data points; $p$: data points.
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
     \Function{par\_k-means}{$p, N, K$} \label{alg:p}
 %    \State Partition N data objects evenly among all threads
     \State Randomly choose $K$ points as cluster centroids $c[]$
