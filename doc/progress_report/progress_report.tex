@@ -27,10 +27,12 @@
 \algnewcommand\INPUT{\item[\algorithmicinput]}
 
 \section{Sequantial Algorithm}
-K-means clustering is a NP-hard problem in general Euclidean space d~\cite{k-means-euclidean}
-and even for instances in a plane~\cite{k-means-plane}. The sequantial
-algorithm shown here is a heuristic algorithm which does not guarantee
-to find a global optimal. 
+K-means clustering is an NP-hard problem in general Euclidean space 
+$\mathbb{R}^d$~\cite{k-means-euclidean}
+and even for instances on a plane~\cite{k-means-plane}. The sequantial
+algorithm below is a heuristic algorithm which does not guarantee
+a global optimal. 
+
 \begin{algorithm}
   \caption{Sequential k-means clustering} \label{seq}
   \begin{algorithmic}[1]
@@ -44,13 +46,15 @@ to find a global optimal.
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
-Suppose m is the number of
-iteration run in this algorithm. The complexity of this algorithm is
-O(Nkdm). 
+
+\vspace{5mm}
+\noindent
+Suppose m is the number of iterations in a run. \\
+The complexity of this algorithm is O(NKdm). 
 
 \section{Parallel k-means clustering}
-The obvious way to parallelize the algorithm is to parallelize the
-membership assignment part and recompute the new centroid. 
+An obvious way to parallelize the algorithm is to parallelize the
+parts for membership assignment and recomputation on new centroids.
 \begin{algorithm}
   \caption{Parallel k-means clustering} \label{par}
   \begin{algorithmic}[1]
@@ -74,38 +78,48 @@ membership assignment part and recompute the new centroid.
   \end{algorithmic}
 \end{algorithm}
 
+\vspace{5mm}
+\noindent
+Suppose m is the number of iterations in a run. \\
+The work-depth model for this algorithm is: Work = O(NKdm), Depth = O(Kdm).
+
 \section{Implementation}
-We plan to implement this algorithm using CUDA on GPU. If we have
-time, we may consider a hybrid implementation with MPI, OpenMP
-and CUDA. During implementation, we need to consider serveral
-GPU-related optimization such as control divergence, coalesced memory
-access and use of shared/constant memory.  
+We plan to implement this algorithm on NVidia GPUs with CUDA platform. If we have
+enough time, we may consider a hybrid implementation with MPI, OpenMP
+and CUDA. For GPU code, we need also consider serveral
+hardware-related optimizations, such as coalesced memory
+access, shared/constant memory usage and execution path divergence control.
 
 \section{Related Work}
-We found two CUDA implementations of parallel k-means
-algorithm~\cite{serban-kmeans, gpuminer}. We plan to compare their
-implementation with ours and also compare the result with other
-MPI/OpenMP implementatoins.  
+We found two open-souce CUDA implementations of parallel k-means
+algorithm~\cite{serban-kmeans, gpuminer} on the Internet. We plan to compare
+our performance with their implementation. We will also make comparison with 
+other open-souce MPI/OpenMP implementatoins.
 
 \section{Experiments Plan}
-We plan to test our implementation on TACC Lonestar GPU node. We plan
-to test our implementation with more than 600,000 points each with more
-than 40 dimention each vector and in total more than 120 centroids. The
-ultimate limitation is the size of GPU memory. If
-we can use GPU memory more efficiently, we might be able to solve
-larger problem size. 
+We plan to test our implementation on the TACC Lonestar GPU node. 
+The dataset should scale to more than 600,000 points, each with 
+40 dimentions or more, and to be clustered into 120 centroids at least. 
+The scalability limitation will mainly be caused by GPU memory size. If
+we can use memory in a more efficient way, we might be able to do
+computation on an even larger problem size. 
 
-For correctness testing,
-we will compare the running result with a known correct
-implementation. We will test our
-implementation with one CUDA thread. But its performance is
-incomperable with single core CPU implementation as GPU runs much
-slower than CPU. For weak scaling, we will fix data points assigned to
-each CUDA block, increase number of CUDA blocks with increase of
-input size and measure total execution time and total execution time taken
-on GPU calculation. For strong scaling, we will fix the input size,
-increase the number of CUDA blocks and measure total execution
-time and total execution time taken on GPU. 
+We sanity check output correctness by comparing run time results with a known 
+previous implementation. 
+We will first test our implementation and compare its single-core performance with 
+a CPU core, under the same input configuration. We expect 10x--50x speed-up 
+over a single CPU core with variant input configurations.
+To get weak scalability, we fix the number of points assigned to
+each CUDA thread block, and measure execution time with an increasing number 
+of thread blocks. Thus, in this case the total input size is propotional to
+the number of thread blocks.
+While for strong scalability, we fix the total input size and increase the 
+number of thread blocks. 
+In both cases, we measure total execution time as well as time consumed by code
+on GPU, in order to do fair comparison with other implementations.
+We use \textbf{gettimeofday()} to measure accurately the run time.
+We might also calculate \textbf{\textit{GFlops}/\textit{s}} as an indicator for GPU
+computation efficiency.
 
 \bibliographystyle{acm}
 \bibliography{bibliography}
