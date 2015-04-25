@@ -27,3 +27,11 @@
 
 kmeans-cpu
 kmeans-gpu
+
+*.tar
+*.tar.gz
+*.zip
+
+*.out
+*.dat
+.*
