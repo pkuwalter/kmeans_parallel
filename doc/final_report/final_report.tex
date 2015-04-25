@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage{amsmath, amsfonts}
+\usepackage{hyperref}
+\usepackage{breakurl}
+\usepackage{paralist}
+\usepackage{algpseudocode}
+\usepackage{algorithmicx}
+\usepackage{algorithm}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\begin{document}
+\title{Final Report}
+\author{Yige Hu and Zhiting Zhu}
+\date{}
+\maketitle
+
+% declaration of the new block
+\algblock{ParFor}{EndParFor}
+% customizing the new block
+\algnewcommand\algorithmicparfor{\textbf{parfor}}
+\algnewcommand\algorithmicpardo{\textbf{do}}
+\algnewcommand\algorithmicendparfor{\textbf{end\ parfor}}
+\algrenewtext{ParFor}[1]{\algorithmicparfor\ #1\ \algorithmicpardo}
+\algrenewtext{EndParFor}{\algorithmicendparfor}
+
+\algnewcommand\algorithmicinput{\textbf{INPUT:}}
+\algnewcommand\INPUT{\item[\algorithmicinput]}
+\section{Sequential Algorithm}
+K-means clustering is an NP-hard problem in general Euclidean space 
+$\mathbb{R}^d$~\cite{k-means-euclidean}
+and even for instances on a plane~\cite{k-means-plane}. The sequential
+algorithm below is a heuristic algorithm which does not guarantee
+a global optimal. 
+
+\begin{algorithm}
+  \caption{Sequential k-means clustering} \label{seq}
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
+    \Function{seq\_k-means}{$p, N, K$}
+    \State Randomly generate $K$ points as cluster centroids $c[]$
+    \While {!termination\_condition }
+    \State Assign each point to the nearest cluster centroid
+    \State Recompute the new cluster centroids
+    \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\vspace{5mm}
+\noindent
+Suppose m is the number of iterations in a run. \\
+The complexity of this algorithm is O(NKdm). 
+
+\section{Parallel k-means clustering}
+An obvious way to parallelize the algorithm is to parallelize the
+parts for membership assignment and recomputation on new centroids.
+\begin{algorithm}
+  \caption{Parallel k-means clustering} \label{par}
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \Function{par\_k-means}{$p, N, K$} \label{alg:p}
+%    \State Partition N data objects evenly among all threads
+    \State Randomly choose $K$ points as cluster centroids $c[]$
+    \While {! termination\_condition}
+    \ParFor {i = 1..N}
+    \For {j = 1..K}
+    \State Compute distance between point $p(i)$ and centroid $c(j)$
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
+    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
+    \EndParFor
+    \State Compute new $c[]$: divide the accumulated coords by num\_points
+    \State Recalculate termination condition
+    \EndWhile
+    \EndFunction  
+  \end{algorithmic}
+\end{algorithm}
+
+\vspace{5mm}
+\noindent
+Suppose m is the number of iterations in a run. \\
+The work-depth model for this algorithm is: Work = O(NKdm), Depth = O(Kdm).
+
+
+\bibliographystyle{acm}
+\bibliography{bibliography}
+\end{document}
