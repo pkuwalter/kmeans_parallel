@@ -21,6 +21,124 @@ inline float dist_square(int dimension, int num_points, float *points, int obj_i
 }
 
 __global__
+void nearest_cluster_new(float *point_norm, float *cluster_norm, float *pc_product,
+int num_points, int num_coords, int num_clusters, float *new_clusters, 
+int *membership, int *membership_changes, int *clusters_size, float *points) {
+
+	unsigned int bid = blockIdx.x;
+	unsigned int bdim = blockDim.x;
+	unsigned int tid = threadIdx.x;
+  unsigned int obj_idx = bid * bdim + tid;
+
+	extern __shared__ float shared[];
+	float *s_cluster_norm = shared;
+
+	__syncthreads();
+
+  int s_per_time = 100;
+  int times = (int) num_clusters / s_per_time;
+
+  int new_cluster_idx = 0;
+  float dist, min_dist = 3.40282e+38;
+
+  // save centroid norms into shared memory by tiles, and calculate distances
+  for (int t = 0; t < times; t ++) {
+
+    for (int i = tid; i < s_per_time; i += bdim) {
+      s_cluster_norm[i] = cluster_norm[t * s_per_time + i];
+    }
+
+	  __syncthreads();
+
+#ifdef DEVICE_TIMING
+clock_t start;
+clock_t duration;
+if (tid == 0) { start = clock(); }
+#endif
+
+	  if (obj_idx < num_points) {
+
+      for (int i = 0; i < s_per_time; i++) {
+      if ((dist = point_norm[obj_idx] + s_cluster_norm[i] - 
+               pc_product[i * num_points + obj_idx]) < min_dist) {
+				  min_dist = dist;
+				  new_cluster_idx = i;
+	  		}
+		  }
+    }
+  }
+
+  // process the remaining clusters.
+  // The final loop is unrolled to avoid an extra comparison in the previous loops
+  for (int t = times * s_per_time; t < num_clusters; t ++) {
+
+    for (int i = tid; i < num_clusters - times * s_per_time; i += bdim) {
+      s_cluster_norm[i] = cluster_norm[times * s_per_time + i];
+    }
+
+    __syncthreads();
+
+    if (obj_idx < num_points) {
+
+      for (int i = 0; i < s_per_time; i++) {
+      if ((dist = point_norm[obj_idx] + s_cluster_norm[i] - 
+               pc_product[i * num_points + obj_idx]) < min_dist) {
+				  min_dist = dist;
+				  new_cluster_idx = i;
+	  		}
+		  }
+    }
+
+  }
+
+#ifdef DEVICE_TIMING
+if (tid == 0) {
+duration = clock() - start;
+printf("\tdist time = %lld microseconds\n", (long long) duration);
+start = clock();
+}
+#endif
+
+  if (obj_idx < num_points) {
+    int old_cluster_idx = membership[obj_idx];
+	  #ifdef SYNCOUNT
+  	membership_changes[bid] = __syncthreads_count(old_cluster_idx != new_cluster_idx);
+  	#endif
+	  if (old_cluster_idx != new_cluster_idx) {
+		  #ifndef SYNCOUNT
+    	atomicAdd(membership_changes, 1);
+	  	#endif
+		  membership[obj_idx] = new_cluster_idx;
+    }
+
+#ifdef DEVICE_TIMING
+if (tid == 0) {
+duration = clock() - start;
+printf("\tmemb cal time = %lld microseconds\n", (long long) duration);
+start = clock();
+}
+#endif
+
+  	atomicAdd(&clusters_size[new_cluster_idx], 1);
+	  for (int i = 0; i < num_coords; i++) {
+		  atomicAdd(&new_clusters[new_cluster_idx * num_coords + i], 
+            points[i * num_points + obj_idx]);
+  	}
+  }
+
+	__syncthreads();
+
+#ifdef DEVICE_TIMING
+if (tid == 0) {
+duration = clock() - start;
+printf("\tcent cal time = %lld microseconds\n", (long long) duration);
+start = clock();
+}
+#endif
+
+}
+
+__global__
 void nearest_cluster(float *points, float *clusters, int num_points, int num_coords, int num_clusters,
 		float *new_clusters, int *membership, int *membership_changes, int *clusters_size) {
 
@@ -44,7 +162,7 @@ void nearest_cluster(float *points, float *clusters, int num_points, int num_coo
   // save centroids into shared memory by tiles, and calculate distances
   for (int t = 0; t < times; t ++) {
 
-    for (int i = tid; i < length_per_time; i ++) {
+    for (int i = tid; i < length_per_time; i += bdim) {
       s_clusters[i] = clusters[t * s_per_time + i];
     }
 
@@ -73,7 +191,8 @@ if (tid == 0) { start = clock(); }
   // The final loop is unrolled to avoid an extra comparison in the previous loops
   for (int t = times * s_per_time; t < num_clusters; t ++) {
 
-    for (int i = tid; i < (num_clusters - times * s_per_time) * num_coords; i ++) {
+    for (int i = tid; i < (num_clusters - times * s_per_time) * num_coords; 
+             i += bdim) {
       s_clusters[i] = clusters[times * s_per_time + i];
     }
 
@@ -311,7 +430,7 @@ start = GetTimeMius64();
 
 
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
-    // First use cuBLAS to compute x_i*c_j
+    // 1. Use cuBLAS to compute x_i*c_j
 
     stat = cublasCreate(&handle);
 
@@ -325,7 +444,7 @@ start = GetTimeMius64();
 
     stat = cublasGetMatrix(num_clusters, num_points, sizeof(float), device_pc_product, num_clusters, pc_product, num_clusters); // cp d_c - >c
 
-    // Compute (x_i)^2 and (c_j)^2
+    // 2. Compute (x_i)^2 and (c_j)^2
 
     for (i = 0; i < num_points; i ++) {
       stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
@@ -341,12 +460,22 @@ start = GetTimeMius64();
   	checkCudaError(__LINE__, cudaMemcpy(device_cluster_norm, cluster_norm,
 				num_clusters * sizeof(float), cudaMemcpyHostToDevice));
 
-		// call kernel function
+    // 3. Compute nearest cluster
+
+    nearest_cluster_new
+				<<<dimGrid, dimBlock, pc_product_length>>>
+        (device_point_norm, device_cluster_norm, device_pc_product, 
+         num_points, num_coords, num_clusters, device_new_clusters, 
+         device_membership, device_membership_changes, device_clusters_size, 
+         device_trans_points);
+
+#if 0
 		nearest_cluster
 				<<<dimGrid, dimBlock, clusters_length>>>
         (device_trans_points, device_clusters, num_points, num_coords, num_clusters,
          device_new_clusters, device_membership, device_membership_changes, 
          device_clusters_size);
+#endif
 
 		cudaDeviceSynchronize();
 		checkCudaError(__LINE__, cudaGetLastError());
@@ -426,6 +555,8 @@ printf("centroid cal time = %lld microseconds\n", (long long) duration);
 	#ifdef SYNCOUNT
 	free(tmp_membership_changes);
 	#endif
+
+  cublasDestroy(handle);
 
 	return retval;
 }
