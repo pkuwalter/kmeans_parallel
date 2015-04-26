@@ -442,8 +442,6 @@ start = GetTimeMius64();
               num_coords, &alpha, device_trans_clusters, num_clusters, 
               device_points, num_coords, &beta, device_pc_product, num_clusters);
 
-    stat = cublasGetMatrix(num_clusters, num_points, sizeof(float), device_pc_product, num_clusters, pc_product, num_clusters); // cp d_c - >c
-
     // 2. Compute (x_i)^2 and (c_j)^2
 
     for (i = 0; i < num_points; i ++) {
