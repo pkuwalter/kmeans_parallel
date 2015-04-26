@@ -27,7 +27,6 @@ void nearest_cluster(float *points, float *clusters, int num_points, int num_coo
 	unsigned int bid = blockIdx.x;
 	unsigned int bdim = blockDim.x;
 	unsigned int tid = threadIdx.x;
-	//unsigned int clusters_length = num_clusters * num_coords;
   unsigned int obj_idx = bid * bdim + tid;
 
 	extern __shared__ float shared[];
@@ -162,15 +161,19 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 
 	// initialization
 	int i, j;
-	float **retval, **clusters;
 	int *clusters_size;
-	unsigned int points_length = num_points * num_coords;
-	unsigned int clusters_length = num_clusters * num_coords;
+	size_t points_length = num_points * num_coords * sizeof(float);
+	size_t clusters_length = num_clusters * num_coords * sizeof(float);
+  size_t pc_product_length = num_points * num_clusters * sizeof(float);
+	float **retval, **clusters;
+  float **trans_points;
+  float **trans_clusters;
+  float *pc_product;
 
 	// transpose the points to coalesce
-  float **trans_points = (float**) malloc(num_coords * sizeof(float*));
+  trans_points = (float**) malloc(num_coords * sizeof(float*));
   assert(trans_points);
-  trans_points[0] = (float*) malloc(points_length * sizeof(float));
+  trans_points[0] = (float*) malloc(points_length);
   assert(trans_points[0]);
   for (i = 0; i < num_coords; i++) {
     if ( i > 0) trans_points[i] = trans_points[i - 1] + num_points;
@@ -180,16 +183,18 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 
 	retval = (float**) malloc(num_clusters * sizeof(float*));
 	assert(retval);
-	retval[0] = (float*) malloc(clusters_length * sizeof(float));
+	retval[0] = (float*) malloc(clusters_length);
 	assert(retval[0]);
 	for (i = 1; i < num_clusters; i++) {
 		retval[i] = retval[i - 1] + num_coords;
 	}
 
-  float **trans_clusters = (float**) malloc(num_coords * sizeof(float*));
+  trans_clusters = (float**) malloc(num_coords * sizeof(float*));
   assert(trans_clusters);
-  trans_clusters[0] = (float*) malloc(clusters_length * sizeof(float));
+  trans_clusters[0] = (float*) malloc(clusters_length);
   assert(trans_clusters[0]);
+
+  pc_product = (float*) calloc(num_points * num_clusters, sizeof(float));
 
 	// randomly choose initial clusters
 	for (i=0; i < num_clusters; i++) {
@@ -204,7 +209,7 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 
 	clusters = (float**) malloc(num_clusters * sizeof(float*));
 	assert(clusters);
-	clusters[0] = (float*) calloc(clusters_length, sizeof(float));
+	clusters[0] = (float*) calloc(num_clusters * num_coords, sizeof(float));
 	assert(clusters[0]);
 	for (i = 1; i < num_clusters; i++) {
 		clusters[i] = clusters[i - 1] + num_coords;
@@ -228,27 +233,25 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	int *device_membership;
 	int *device_membership_changes;
 	int *device_clusters_size;
-
-  int pc_product_size = num_points * num_clusters;
   float alpha = 2.0f;
-  float beta = 1.0f;
+  float beta = 0.0f;
   cublasStatus_t stat;
   cublasHandle_t handle;
 
-	checkCudaError(__LINE__, cudaMalloc(&device_points, points_length * sizeof(float)));
-	checkCudaError(__LINE__, cudaMalloc(&device_trans_points, points_length * sizeof(float)));
-	checkCudaError(__LINE__, cudaMalloc(&device_clusters, clusters_length * sizeof(float)));
-	checkCudaError(__LINE__, cudaMalloc(&device_trans_clusters, clusters_length * sizeof(float)));
-	checkCudaError(__LINE__, cudaMalloc(&device_new_clusters, clusters_length * sizeof(float)));
-	checkCudaError(__LINE__, cudaMalloc(&device_pc_product, pc_product_size * sizeof(float)));
+	checkCudaError(__LINE__, cudaMalloc(&device_points, points_length));
+	checkCudaError(__LINE__, cudaMalloc(&device_trans_points, points_length));
+	checkCudaError(__LINE__, cudaMalloc(&device_clusters, clusters_length));
+	checkCudaError(__LINE__, cudaMalloc(&device_trans_clusters, clusters_length));
+	checkCudaError(__LINE__, cudaMalloc(&device_new_clusters, clusters_length));
+	checkCudaError(__LINE__, cudaMalloc(&device_pc_product, pc_product_length));
 	checkCudaError(__LINE__, cudaMalloc(&device_clusters_size, num_clusters * sizeof(int)));
 	checkCudaError(__LINE__, cudaMalloc(&device_membership, num_points * sizeof(int)));
 	checkCudaError(__LINE__, cudaMalloc(&device_membership_changes, dimGrid * sizeof(int)));
 
-	checkCudaError(__LINE__, cudaMemcpy(device_points, points[0],
-      points_length * sizeof(float), cudaMemcpyHostToDevice));
+//	checkCudaError(__LINE__, cudaMemcpy(device_points, points[0],
+//      points_length, cudaMemcpyHostToDevice));
 	checkCudaError(__LINE__, cudaMemcpy(device_trans_points, trans_points[0],
-      points_length * sizeof(float), cudaMemcpyHostToDevice));
+      points_length, cudaMemcpyHostToDevice));
 	checkCudaError(__LINE__, cudaMemcpy(device_membership,
 			membership, num_points * sizeof(int), cudaMemcpyHostToDevice));
 
@@ -279,14 +282,14 @@ int64_t start = GetTimeMius64();
 			  trans_clusters[i][j] = retval[j][i];
 	  }
 
-    checkCudaError(__LINE__, cudaMemset(device_pc_product, 0, 
-        pc_product_size * sizeof(float)));
+//    checkCudaError(__LINE__, cudaMemset(device_pc_product, 0, 
+//        pc_product_length));
 		checkCudaError(__LINE__, cudaMemcpy(device_clusters, retval[0],
-				clusters_length * sizeof(float), cudaMemcpyHostToDevice));
-  	checkCudaError(__LINE__, cudaMemcpy(device_trans_clusters, trans_clusters[0], 
-        clusters_length * sizeof(float), cudaMemcpyHostToDevice));
+				clusters_length, cudaMemcpyHostToDevice));
+//  	checkCudaError(__LINE__, cudaMemcpy(device_trans_clusters, trans_clusters[0], 
+//        clusters_length, cudaMemcpyHostToDevice));
 		checkCudaError(__LINE__, cudaMemcpy(device_new_clusters, clusters[0],
-				clusters_length * sizeof(float), cudaMemcpyHostToDevice));
+				clusters_length, cudaMemcpyHostToDevice));
 		checkCudaError(__LINE__, cudaMemcpy(device_clusters_size, clusters_size,
 				num_clusters * sizeof(int), cudaMemcpyHostToDevice));
 
@@ -300,21 +303,28 @@ start = GetTimeMius64();
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
     // First use cuBLAS to compute x_i*c_j
 
-#if 0
+#if 1
+    stat = cublasCreate(&handle);
+
+    stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
+    stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points, num_coords, device_points, num_coords);
+    stat = cublasSetMatrix(num_clusters, num_points, sizeof(float), pc_product, num_clusters, device_pc_product, num_clusters);
+
     stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_clusters, num_points, 
               num_coords, &alpha, device_trans_clusters, num_clusters, 
               device_points, num_coords, &beta, device_pc_product, num_clusters);
+
+    stat = cublasGetMatrix(num_clusters, num_points, sizeof(float), device_pc_product, num_clusters, pc_product, num_clusters); // cp d_c - >c
 #endif
 
 //   stat = cublasGetMatrix (m,n, sizeof (*c) ,d_c ,m,c,m); // cp d_c - >c
 
-
-
 		// call kernel function
 		nearest_cluster
-				<<<dimGrid, dimBlock, clusters_length * sizeof(float)>>>
-        (device_trans_points, device_clusters, num_points, num_coords, num_clusters, device_new_clusters,
-        device_membership, device_membership_changes, device_clusters_size);
+				<<<dimGrid, dimBlock, clusters_length>>>
+        (device_trans_points, device_clusters, num_points, num_coords, num_clusters,
+         device_new_clusters, device_membership, device_membership_changes, 
+         device_clusters_size);
 
 		cudaDeviceSynchronize();
 		checkCudaError(__LINE__, cudaGetLastError());
@@ -328,7 +338,7 @@ start = GetTimeMius64();
 		checkCudaError(__LINE__, cudaMemcpy(clusters_size, device_clusters_size,
         num_clusters * sizeof(int), cudaMemcpyDeviceToHost));
 		checkCudaError(__LINE__, cudaMemcpy(clusters[0], device_new_clusters,
-				clusters_length * sizeof(float), cudaMemcpyDeviceToHost));
+				clusters_length, cudaMemcpyDeviceToHost));
 		checkCudaError(__LINE__, cudaMemcpy(membership, device_membership,
 				num_points * sizeof(int), cudaMemcpyDeviceToHost));
 		#ifdef SYNCOUNT
@@ -369,8 +379,12 @@ printf("centroid cal time = %lld microseconds\n", (long long) duration);
 
 	free(trans_points[0]);
   free(trans_points);
+	free(clusters[0]);
+	free(clusters);
   free(trans_clusters[0]);
   free(trans_clusters);
+  free(pc_product);
+	free(clusters_size);
 
   checkCudaError(__LINE__, cudaFree(device_points));
 	checkCudaError(__LINE__, cudaFree(device_trans_points));
@@ -381,10 +395,6 @@ printf("centroid cal time = %lld microseconds\n", (long long) duration);
 	checkCudaError(__LINE__, cudaFree(device_membership));
 	checkCudaError(__LINE__, cudaFree(device_membership_changes));
 	checkCudaError(__LINE__, cudaFree(device_clusters_size));
-
-	free(clusters[0]);
-	free(clusters);
-	free(clusters_size);
 
 	#ifdef SYNCOUNT
 	free(tmp_membership_changes);
