@@ -169,6 +169,8 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
   float **trans_points;
   float **trans_clusters;
   float *pc_product;
+  float *point_norm;
+  float *cluster_norm;
 
 	// transpose the points to coalesce
   trans_points = (float**) malloc(num_coords * sizeof(float*));
@@ -195,6 +197,9 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
   assert(trans_clusters[0]);
 
   pc_product = (float*) calloc(num_points * num_clusters, sizeof(float));
+
+  point_norm = (float*) malloc(num_points * sizeof(float));
+  cluster_norm = (float*) malloc(num_clusters * sizeof(float));
 
 	// randomly choose initial clusters
 	for (i=0; i < num_clusters; i++) {
@@ -230,6 +235,8 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	float *device_clusters, *device_trans_clusters;
 	float *device_new_clusters;
   float *device_pc_product;
+  float *device_point_norm, *device_cluster_norm;
+  float *d_vector;
 	int *device_membership;
 	int *device_membership_changes;
 	int *device_clusters_size;
@@ -244,6 +251,9 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	checkCudaError(__LINE__, cudaMalloc(&device_trans_clusters, clusters_length));
 	checkCudaError(__LINE__, cudaMalloc(&device_new_clusters, clusters_length));
 	checkCudaError(__LINE__, cudaMalloc(&device_pc_product, pc_product_length));
+  checkCudaError(__LINE__, cudaMalloc(&device_point_norm, num_points * sizeof(float)));
+  checkCudaError(__LINE__, cudaMalloc(&device_cluster_norm, num_clusters * sizeof(float)));
+  checkCudaError(__LINE__, cudaMalloc(&d_vector, num_coords * sizeof(float)));
 	checkCudaError(__LINE__, cudaMalloc(&device_clusters_size, num_clusters * sizeof(int)));
 	checkCudaError(__LINE__, cudaMalloc(&device_membership, num_points * sizeof(int)));
 	checkCudaError(__LINE__, cudaMalloc(&device_membership_changes, dimGrid * sizeof(int)));
@@ -303,7 +313,6 @@ start = GetTimeMius64();
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
     // First use cuBLAS to compute x_i*c_j
 
-#if 1
     stat = cublasCreate(&handle);
 
     stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
@@ -315,9 +324,22 @@ start = GetTimeMius64();
               device_points, num_coords, &beta, device_pc_product, num_clusters);
 
     stat = cublasGetMatrix(num_clusters, num_points, sizeof(float), device_pc_product, num_clusters, pc_product, num_clusters); // cp d_c - >c
-#endif
 
-//   stat = cublasGetMatrix (m,n, sizeof (*c) ,d_c ,m,c,m); // cp d_c - >c
+    // Compute (x_i)^2 and (c_j)^2
+
+    for (i = 0; i < num_points; i ++) {
+      stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
+      stat = cublasSnrm2(handle, num_coords, d_vector, 1, &point_norm[i]);
+    }
+    for (i = 0; i < num_clusters; i ++) {
+      stat = cublasSetVector(num_coords, sizeof(float), retval[i], 1, d_vector, 1);
+      stat = cublasSnrm2(handle, num_coords, d_vector, 1, &cluster_norm[i]);
+    }
+
+  	checkCudaError(__LINE__, cudaMemcpy(device_point_norm, point_norm,
+				num_points * sizeof(float), cudaMemcpyHostToDevice));
+  	checkCudaError(__LINE__, cudaMemcpy(device_cluster_norm, cluster_norm,
+				num_clusters * sizeof(float), cudaMemcpyHostToDevice));
 
 		// call kernel function
 		nearest_cluster
@@ -384,6 +406,8 @@ printf("centroid cal time = %lld microseconds\n", (long long) duration);
   free(trans_clusters[0]);
   free(trans_clusters);
   free(pc_product);
+  free(point_norm);
+  free(cluster_norm);
 	free(clusters_size);
 
   checkCudaError(__LINE__, cudaFree(device_points));
@@ -392,6 +416,9 @@ printf("centroid cal time = %lld microseconds\n", (long long) duration);
 	checkCudaError(__LINE__, cudaFree(device_trans_clusters));
 	checkCudaError(__LINE__, cudaFree(device_new_clusters));
   checkCudaError(__LINE__, cudaFree(device_pc_product));
+  checkCudaError(__LINE__, cudaFree(d_vector));
+  checkCudaError(__LINE__, cudaFree(device_point_norm));
+  checkCudaError(__LINE__, cudaFree(device_cluster_norm));
 	checkCudaError(__LINE__, cudaFree(device_membership));
 	checkCudaError(__LINE__, cudaFree(device_membership_changes));
 	checkCudaError(__LINE__, cudaFree(device_clusters_size));
