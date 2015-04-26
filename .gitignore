@@ -32,6 +32,7 @@ kmeans-gpu
 *.tar.gz
 *.zip
 
+*.bak
 *.out
 *.dat
 .*

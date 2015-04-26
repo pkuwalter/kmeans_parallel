@@ -5,7 +5,7 @@ TIMING=-DTIMING -DKERNAL_TIMING
 CC=g++
 CFLAGS=-Wall -O0 -g3 $(DEBUG) $(TIMING) $(METHOD)
 INCLUDE=-I/usr/local/cuda-5.0/include
-LIBS=-L/usr/local/cuda/lib64 -lcuda -lcudart
+LIBS=-L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas
 
 NVCC=nvcc
 NVCCFLAGS=-c -arch=sm_20 $(DEBUG) $(TIMING) $(METHOD)
