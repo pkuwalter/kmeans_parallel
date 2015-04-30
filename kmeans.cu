@@ -2,6 +2,7 @@
 #include <cublas_v2.h>
 
 #define DIM_BLOCK 128
+#define SHARED_POINTS 100
 
 __host__ __device__
 inline float dist_square(int dimension, int num_points, float *points, int obj_idx, float *p2) {
@@ -25,6 +26,7 @@ void nearest_cluster_new(float *point_norm, float *cluster_norm, float *pc_produ
 int num_points, int num_coords, int num_clusters, float *new_clusters, 
 int *membership, int *membership_changes, int *clusters_size, float *points) {
 
+#if 1
 	unsigned int bid = blockIdx.x;
 	unsigned int bdim = blockDim.x;
 	unsigned int tid = threadIdx.x;
@@ -35,7 +37,7 @@ int *membership, int *membership_changes, int *clusters_size, float *points) {
 
 	__syncthreads();
 
-  int s_per_time = 100;
+  int s_per_time = SHARED_POINTS;
   int times = (int) num_clusters / s_per_time;
 
   int new_cluster_idx = 0;
@@ -136,6 +138,7 @@ start = clock();
 }
 #endif
 
+#endif
 }
 
 __global__
@@ -152,7 +155,7 @@ void nearest_cluster(float *points, float *clusters, int num_points, int num_coo
 
 	__syncthreads();
 
-  int s_per_time = (int) (100 / (num_coords));
+  int s_per_time = (int) (SHARED_POINTS / (num_coords));
   int length_per_time = s_per_time * num_coords;
   int times = (int) num_clusters / s_per_time;
 
@@ -443,7 +446,6 @@ start = GetTimeMius64();
               device_points, num_coords, &beta, device_pc_product, num_clusters);
 
     // 2. Compute (x_i)^2 and (c_j)^2
-
     for (i = 0; i < num_points; i ++) {
       stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
       stat = cublasSnrm2(handle, num_coords, d_vector, 1, &point_norm[i]);
@@ -461,7 +463,7 @@ start = GetTimeMius64();
     // 3. Compute nearest cluster
 
     nearest_cluster_new
-				<<<dimGrid, dimBlock, pc_product_length>>>
+				<<<dimGrid, dimBlock, SHARED_POINTS * sizeof(float)>>>
         (device_point_norm, device_cluster_norm, device_pc_product, 
          num_points, num_coords, num_clusters, device_new_clusters, 
          device_membership, device_membership_changes, device_clusters_size, 

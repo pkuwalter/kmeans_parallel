@@ -6,8 +6,8 @@ import cStringIO
 import struct
 
 def main():
-    num_points = 640
-    dimension = 5
+    num_points = 10000
+    dimension = 40
 
     buffer = cStringIO.StringIO()
     for i in range(num_points):
