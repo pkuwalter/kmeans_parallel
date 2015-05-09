@@ -1,6 +1,7 @@
 #include "kmeans.h"
 
 #define DIM_BLOCK 128
+#define SHARED_POINTS 100
 
 __host__ __device__
 inline float dist_square(int dimension, int num_points, float *points, int obj_idx, float *p2) {
@@ -34,7 +35,7 @@ void nearest_cluster(float *points, float *clusters, int num_points, int num_coo
 
 	__syncthreads();
 
-  int s_per_time = (int) (100 / (num_coords));
+  int s_per_time = (int) (SHARED_POINTS / (num_coords));
   int length_per_time = s_per_time * num_coords;
   int times = (int) num_clusters / s_per_time;
 
@@ -267,7 +268,7 @@ start = GetTimeMius64();
 
 		// call kernel function
 		nearest_cluster
-				<<<dimGrid, dimBlock, clusters_length * sizeof(float)>>>
+				<<<dimGrid, dimBlock, SHARED_POINTS * sizeof(float)>>>
         (device_points, device_clusters, num_points, num_coords, num_clusters, device_new_clusters,
         device_membership, device_membership_changes, device_clusters_size);
 
