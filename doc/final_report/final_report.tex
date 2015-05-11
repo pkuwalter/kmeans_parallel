@@ -40,8 +40,17 @@ a global optimal.
     \Function{seq\_k-means}{$p, N, K$}
     \State Randomly generate $K$ points as cluster centroids $c[]$
     \While {!termination\_condition }
+    \For {i = 1..N}
+    \For {j = 1..K}
+    \For {dd = 1..d}
+    \State $distance += (p(i)(dd) - c(j)(dd))^2$
+    \EndFor
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Assign each point to the nearest cluster centroid
-    \State Recompute the new cluster centroids
+    \State Accumulate $p(i)$'s coordinates
+    \State divide the accumulated coords by num\_points to get the new centroid
+    \EndFor
     \EndWhile
     \EndFunction
   \end{algorithmic}
@@ -57,12 +66,12 @@ An obvious way to parallelize the algorithm is to parallelize the
 parts for membership assignment and recomputation on new centroids.
 
 There are two ways to compute distance between point $p(i)$
-and centroid $c(j)$. Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ and $c(i) = (c_{i1},
-c_{i2}, ..., c_{id})$, the squared Euclidean distance: 
+and centroid $c(j)$. Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ and $c(j) = (c_{j1},
+c_{j2}, ..., c_{jd})$, the squared Euclidean distance between point p(i) and centroid c(j): 
 \begin{align}
-d(p(i),c(j)) &= (p_{i1} - c_{i1})^2 + (p_{i2} - c_{i2})^2 + ... + (p_{id} - c_{id})^2 \label{e1}\\
-&= (p_{i1}^2 + p_{i2}^2 + ... + p_{id}^2) - (2*p_{i1}*c_{i1} + 2*p_{i2}*c_{i2} + ... + 2*p_{id}*c_{id})
-+ (c_{i1}^2 + c_{i2}^2 + ... + c_{id}^2) \label{e2}
+d(p(i),c(j)) &= (p_{i1} - c_{j1})^2 + (p_{i2} - c_{j2})^2 + ... + (p_{id} - c_{jd})^2 \label{e1}\\
+&= (p_{i1}^2 + p_{i2}^2 + ... + p_{id}^2) - (2*p_{i1}*c_{j1} + 2*p_{i2}*c_{j2} + ... + 2*p_{id}*c_{jd})
++ (c_{j1}^2 + c_{j2}^2 + ... + c_{jd}^2) \label{e2}
 \end{align}
 
 Algorithm implements \ref{e1} is listed in Algorithm~\ref{par}. 
@@ -76,7 +85,7 @@ Algorithm implements \ref{e1} is listed in Algorithm~\ref{par}.
     \ParFor {i = 1..N}
     \For {j = 1..K}
     \For {dd = 1..d}
-    \State $distance += (p(i)(dd) - c(i)(dd))^2$
+    \State $distance += (p(i)(dd) - c(j)(dd))^2$
     \EndFor
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
@@ -93,7 +102,7 @@ Suppose m is the number of iterations in a run. The work-depth model for this al
 Work = O(NKdm), Depth = O(Kdm).
 
 \ref{e2} can be structured as vector norm of each row of matrix (norm of p(i) and c(j)) and
-a matrix-matrix multiplication (p * c). These matrix operation is implemented by cuBLAS library. 
+a matrix-matrix multiplication (p * c). 
 \begin{algorithm}[!htp]
   \caption{Parallel k-means clustering using matrix operation} \label{par_m}
   \begin{algorithmic}[1]
@@ -122,8 +131,11 @@ a matrix-matrix multiplication (p * c). These matrix operation is implemented by
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
-The work-depth model for this algorithm is also: Work = O(NKdm), Depth = O(Kdm).
+The work-depth model for this algorithm is: Work = O(2Ndm + Kdm + NKdm + NKm), Depth = O(Km + Nd + Kd).
 
+\section{Implementation}
+
+\section{Evaluation}
 
 \bibliographystyle{acm}
 \bibliography{bibliography}
