@@ -55,17 +55,29 @@ The complexity of this algorithm is O(NKdm).
 \section{Parallel k-means clustering}
 An obvious way to parallelize the algorithm is to parallelize the
 parts for membership assignment and recomputation on new centroids.
-\begin{algorithm}
+
+There are two ways to compute distance between point $p(i)$
+and centroid $c(j)$. Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ and $c(i) = (c_{i1},
+c_{i2}, ..., c_{id})$, the squared Euclidean distance: 
+\begin{align}
+d(p(i),c(j)) &= (p_{i1} - c_{i1})^2 + (p_{i2} - c_{i2})^2 + ... + (p_{id} - c_{id})^2 \label{e1}\\
+&= (p_{i1}^2 + p_{i2}^2 + ... + p_{id}^2) - (2*p_{i1}*c_{i1} + 2*p_{i2}*c_{i2} + ... + 2*p_{id}*c_{id})
++ (c_{i1}^2 + c_{i2}^2 + ... + c_{id}^2) \label{e2}
+\end{align}
+
+Algorithm implements \ref{e1} is listed in Algorithm~\ref{par}. 
+\begin{algorithm}[!htp]
   \caption{Parallel k-means clustering} \label{par}
   \begin{algorithmic}[1]
     \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
     \Function{par\_k-means}{$p, N, K$} \label{alg:p}
-%    \State Partition N data objects evenly among all threads
     \State Randomly choose $K$ points as cluster centroids $c[]$
     \While {! termination\_condition}
     \ParFor {i = 1..N}
     \For {j = 1..K}
-    \State Compute distance between point $p(i)$ and centroid $c(j)$
+    \For {dd = 1..d}
+    \State $distance += (p(i)(dd) - c(i)(dd))^2$
+    \EndFor
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
@@ -77,11 +89,40 @@ parts for membership assignment and recomputation on new centroids.
     \EndFunction  
   \end{algorithmic}
 \end{algorithm}
+Suppose m is the number of iterations in a run. The work-depth model for this algorithm is:
+Work = O(NKdm), Depth = O(Kdm).
 
-\vspace{5mm}
-\noindent
-Suppose m is the number of iterations in a run. \\
-The work-depth model for this algorithm is: Work = O(NKdm), Depth = O(Kdm).
+\ref{e2} can be structured as vector norm of each row of matrix (norm of p(i) and c(j)) and
+a matrix-matrix multiplication (p * c). These matrix operation is implemented by cuBLAS library. 
+\begin{algorithm}[!htp]
+  \caption{Parallel k-means clustering using matrix operation} \label{par_m}
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
+    \State Randomly choose $K$ points as cluster centroids $c[]$
+    \While {! termination\_condition}
+    \For {i = 1..N}
+    \State $p\_norm(i) = norm(p(i))$
+    \EndFor
+    \For {j = 1..K}
+    \State $c\_norm(j) = norm(c(j))$
+    \EndFor
+    \State $pc\_product = 2 .* p' * c$
+    \ParFor {i = 1..N}
+    \For {j = 1..K}
+    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
+    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
+    \EndParFor
+    \State Compute new $c[]$: divide the accumulated coords by num\_points
+    \State Recalculate termination condition
+    \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+The work-depth model for this algorithm is also: Work = O(NKdm), Depth = O(Kdm).
 
 
 \bibliographystyle{acm}
