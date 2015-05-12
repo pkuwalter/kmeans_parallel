@@ -59,17 +59,17 @@ Table~\ref{tab:comparison} and Figure~\ref{fig:all} and \ref{fig:par}. Parallel 
 Algorithm~\ref{par}, \ref{par_m} and \ref{par_vn_m} respectively.   
 \begin{table}[!h]
   \centering
-  \begin{tabular}{|p{1cm}|p{1.4cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|}
+  \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
     \hline
-    & Number of points	& 10000	& 20000	& 40000	& 80000	& 160000	& 320000	& 640000 \\
+    {}& Number of points	& 10000	& 20000	& 40000	& 80000	& 160000	& 320000	& 640000 \\
     \hline
-    \multirow{4}{*}{Time(s)}	& sequential	& 13.342232	& 26.397233	& 52.528985	& 105.077747	& 210.116223	& 420.287315	& 840.63679 \\
+    \multirow{4}{*}{Time(s)}	& sequential	& 13.342	& 26.397	& 52.528	& 105.078	& 210.116	& 420.287	& 840.637 \\
     \cline{2-9}
-	  & parallel v1	& 5.150253	& 5.334522	& 5.56897	& 6.212595	& 7.27669	& 9.324087	& 13.882712 \\
+	  & parallel v1	& 5.150	& 5.335	& 5.569	& 6.213	& 7.277	& 9.324	& 13.883 \\
     \cline{2-9}
-	  & parallel v2	& 5.914093	& 6.602768	& 7.930681	& 10.267001	& 15.379849	& 25.136588	& 44.041563 \\
+	  & parallel v2	& 5.914	& 6.603	& 7.931	& 10.267	& 15.380	& 25.137	& 44.042 \\
     \cline{2-9}
-	  & parallel v3	& 5.308004	& 5.559447	& 6.048962	& 6.932199	& 8.955507	& 12.66189	& 20.017067 \\
+	  & parallel v3	& 5.308	& 5.559	& 6.049	& 6.932	& 8.956	& 12.662	& 20.017 \\
     \hline
   \end{tabular}
   \label{tab:comparison}
@@ -78,13 +78,14 @@ Algorithm~\ref{par}, \ref{par_m} and \ref{par_vn_m} respectively.
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[width=\linewidth]{fig/all_comparison}
-  \caption{Comparison of running time between sequential and three versions of parallel algorithms}
-  \label{fig:all}
-\end{figure}
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=\linewidth]{fig/parallel_algorithm_comparison}
-  \caption{Comparison of three parallel algorithms}
-  \label{fig:par}
+  \begin{minipage}{.8\textwidth}
+    \includegraphics[width=\linewidth]{fig/all_comparison}
+    \caption{Comparison of running time between sequential and three versions of parallel algorithms}
+    \label{fig:all}
+  \end{minipage}
+  \begin{minipage}{.8\textwidth}
+    \includegraphics[width=\linewidth]{fig/parallel_algorithm_comparison}
+    \caption{Comparison of three parallel algorithms}
+    \label{fig:par}
+  \end{minipage}
 \end{figure}
