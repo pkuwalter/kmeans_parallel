@@ -459,7 +459,7 @@ int64_t start2 = GetTimeMius64();
 
 #ifdef BLAS_TIMING
 int64_t duration2 = GetTimeMiusFrom(start2);
-printf("Norm x^2 time = %lld microseconds\n", (long long) duration2);
+printf("\nNorm x^2 time = %lld microseconds\n", (long long) duration2);
 start2 = GetTimeMius64();
 #endif
 
@@ -514,6 +514,8 @@ start2 = GetTimeMius64();
 
     stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
     stat = cublasSetMatrix(num_clusters, num_points, sizeof(float), pc_product, num_clusters, device_pc_product, num_clusters);
+
+    cudaDeviceSynchronize();
 
 #ifdef BLAS_TIMING
 duration2 = GetTimeMiusFrom(start2);
