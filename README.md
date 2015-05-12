@@ -1,16 +1,16 @@
 kmeans-gpu
 ==========================
 
-# A baseline K-Means program on GPU
+## A baseline K-Means program on GPU
 
-## The cuda kernel is invoked to:
+### Basic version (master branch): cuda kernel
 1. Calculate the distance between each point and cluster centroids, and find the nearest centroids;
 2. For each centroid, calculate the number of its belonging points, and sum up their coordinates.
 3. The averaging (a final division) is done outside the kernel.
 
 
 
-## Techniques used for speeding-up:
+### GPU architecture-related optimization:
 1. Coalesced memory access;
 2. Shared memory -- save centroids into shared memory by tiles;
 3. Prefetching;
@@ -19,7 +19,7 @@ kmeans-gpu
 
 
 
-## Versions and Branches:
+### Versions and branches:
 * master: Pure hand-coded version, without using CuBLAS. dist = (x_i - c_i)^2;
 * v2: (x_i - c_i)^2 = x_i^2 + c_i^2 - 2x_i\*c_i, use cublasSgemm() and cublasSnrm2() to compute each tearm, finding cublasSnrm2() is slow;
 * v3: Using the diagonals of (x^t \* x), computed by cublasSgemm(), to substitute cublasSnrm2(), limited by the points size;
@@ -27,8 +27,7 @@ kmeans-gpu
 
 
 
-
-##Usage: 
+### Usage: 
 ```
 ./kmeans-gpu [switches] -i filename -n num\_clusters
     -i filename    : file containing data to be clustered
