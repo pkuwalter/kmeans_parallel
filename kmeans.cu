@@ -438,7 +438,7 @@ start = GetTimeMius64();
     stat = cublasCreate(&handle);
 
     stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
-    stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points, num_coords, device_points, num_coords);
+    stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points[0], num_coords, device_points, num_coords);
     stat = cublasSetMatrix(num_clusters, num_points, sizeof(float), pc_product, num_clusters, device_pc_product, num_clusters);
 
     stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_clusters, num_points, 
