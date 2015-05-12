@@ -15,7 +15,7 @@ kmeans-gpu
 2. Shared memory -- save centroids into shared memory by tiles;
 3. Prefetching;
 
-⋅⋅⋅⋅⋅⋅⋅If define SYNCOUNT in the Makefile, '\_\_syncthreads\_count' would be used to replace an atomic sumation.
+  * If define SYNCOUNT in the Makefile, '\_\_syncthreads\_count' would be used to replace an atomic sumation.
 
 
 
@@ -29,8 +29,10 @@ kmeans-gpu
 
 
 ##Usage: 
-⋅⋅⋅./kmeans-gpu [switches] -i filename -n num\_clusters
-⋅⋅⋅⋅⋅⋅⋅-i filename    : file containing data to be clustered
-⋅⋅⋅⋅⋅⋅⋅-n num_clusters: number of clusters (K must > 1)
-⋅⋅⋅⋅⋅⋅⋅-t threshold   : threshold value (default 0.0010)
-⋅⋅⋅⋅⋅⋅⋅-c iteration   : end after iterations
+```
+./kmeans-gpu [switches] -i filename -n num\_clusters
+    -i filename    : file containing data to be clustered
+    -n num_clusters: number of clusters (K must > 1)
+    -t threshold   : threshold value (default 0.0010)
+    -c iteration   : end after iterations
+```
