@@ -3,7 +3,6 @@
 
 #define DIM_BLOCK 128
 #define SHARED_POINTS 100
-#define PRODUCT_FOR_NORM 1
 
 #define NORM_SIZE 100
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
@@ -452,9 +451,7 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	  	num_points * sizeof(float), cudaMemcpyHostToDevice));
 
   stat = cublasCreate(&handle);
-#ifndef PRODUCT_FOR_NORM
   vec_norm(&handle, points, &device_points, num_points, num_coords, &device_point_norm);
-#endif
 
 	// K-mean calculation
 	int iter = 0;
@@ -526,38 +523,7 @@ start2 = GetTimeMius64();
 #endif
 
     // 2. Compute (c_j)^2, (x_i)^2 pre-computed, loop-invariant
-#ifndef PRODUCT_FOR_NORM
-
-    for (i = 0; i < num_points; i ++) {
-      stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
-      stat = cublasSnrm2(handle, num_coords, d_vector, 1, &point_norm[i]);
-    }
-
-#ifdef KERNAL_TIMING
-duration2 = GetTimeMiusFrom(start2);
-printf("Sgemm x^2 time = %lld microseconds\n", (long long) duration2);
-start2 = GetTimeMius64();
-#endif
-
-    for (i = 0; i < num_clusters; i ++) {
-      stat = cublasSetVector(num_coords, sizeof(float), retval[i], 1, d_vector, 1);
-      stat = cublasSnrm2(handle, num_coords, d_vector, 1, &cluster_norm[i]);
-    }
-
-#ifdef KERNAL_TIMING
-duration2 = GetTimeMiusFrom(start2);
-printf("Sgemm c^2 time = %lld microseconds\n", (long long) duration2);
-start2 = GetTimeMius64();
-#endif
-
-  	checkCudaError(__LINE__, cudaMemcpy(device_cluster_norm, cluster_norm,
-				num_clusters * sizeof(float), cudaMemcpyHostToDevice));
-
-#else
-
-  vec_norm(&handle, clusters, &device_clusters, num_clusters, num_coords, &device_cluster_norm);
-
-#endif
+    vec_norm(&handle, clusters, &device_clusters, num_clusters, num_coords, &device_cluster_norm);
 
     // 3. Compute nearest cluster
 
