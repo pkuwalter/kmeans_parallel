@@ -4,7 +4,7 @@
 #define DIM_BLOCK 128
 #define SHARED_POINTS 100
 
-#define BLAS_TIMING 1
+//#define BLAS_TIMING 1
 
 __host__ __device__
 inline float dist_square(int dimension, int num_points, float *points, int obj_idx, float *p2) {
@@ -480,6 +480,8 @@ start2 = GetTimeMius64();
     stat = cublasSetMatrix(num_clusters, num_points, sizeof(float), pc_product, num_clusters, device_pc_product, num_clusters);
     stat = cublasSetMatrix(num_clusters, num_clusters, sizeof(float), c_product, num_clusters, device_c_product, num_clusters);
 
+    cudaDeviceSynchronize();
+
 #ifdef BLAS_TIMING
 duration2 = GetTimeMiusFrom(start2);
 printf("SetMatrix time = %lld microseconds\n", (long long) duration2);
@@ -516,7 +518,6 @@ start2 = GetTimeMius64();
 #ifdef BLAS_TIMING
 duration2 = GetTimeMiusFrom(start2);
 printf("Snrm2 c^2 time = %lld microseconds\n", (long long) duration2);
-start2 = GetTimeMius64();
 #endif
 
     // 3. Compute nearest cluster
