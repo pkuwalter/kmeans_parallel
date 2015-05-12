@@ -25,19 +25,22 @@ int main(int argc, char **argv) {
 	float threshold = 0.001;
     int num_clusters = 0;
     char *infile = NULL;
-
-    while ( (c=getopt(argc,argv,"i:n:t:"))!= EOF) {
-        switch (c) {
-            case 'i': infile=optarg;
-                      break;
-            case 't': threshold=atof(optarg);
-                      break;
-            case 'n': num_clusters = atoi(optarg);
-                      break;
-            case '?': usage(argv[0], threshold);
-                      break;
-            default: usage(argv[0], threshold);
-                      break;
+    int iterations = 100;
+    
+    while ( (c=getopt(argc,argv,"i:n:t:c:"))!= EOF) {
+          switch (c) {
+              case 'i': infile=optarg;
+                        break;
+              case 't': threshold=atof(optarg);
+                        break;
+              case 'n': num_clusters = atoi(optarg);
+                        break;
+              case 'c': iterations = atoi(optarg);
+                        break;
+              case '?': usage(argv[0], threshold);
+                        break;
+              default: usage(argv[0], threshold);
+                        break;
         }
     }
 
@@ -52,7 +55,6 @@ int main(int argc, char **argv) {
 	// K-means calculation
 	int *membership = (int*) malloc(num_points * sizeof(int));
 	assert(membership);
-	int iterations;
 
 	#ifdef TIMING
 	printf("Timer start....\n");
@@ -60,7 +62,7 @@ int main(int argc, char **argv) {
 	#endif
 
 	float **clusters = kmeans(points, num_points, num_coords, num_clusters,
-			threshold, membership, &iterations);
+			threshold, membership, iterations);
 
 	#ifdef TIMING
 	int64_t duration = GetTimeMiusFrom(start);

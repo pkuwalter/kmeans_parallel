@@ -40,6 +40,6 @@ inline int nearest_cluster(int num_clusters, int num_coords, float *point, float
  * @param iterations number of iterations
  */
 float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
-			float threshold, int *membership, int *iterations);
+			float threshold, int *membership, int iterations);
 
 #endif /* KMEANS_H_ */

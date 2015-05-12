@@ -25,7 +25,7 @@ inline int nearest_cluster(int num_clusters, int num_coords, float *point, float
 }
 
 float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
-			float threshold, int *membership, int *iterations) {
+			float threshold, int *membership, int iterations) {
 
 	// initialization
 	int i, j;
@@ -60,7 +60,7 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	// K-mean calculation
 	int iter = 1;
 	int membership_changes = num_points;
-	while (((float) membership_changes / (float) num_points > threshold) && (iter++ < 500)) {
+	while (((float) membership_changes / (float) num_points > threshold) && (iter++ < iterations)) {
 		membership_changes = 0;
 
 		// re-allocate cluster membership
@@ -90,7 +90,6 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 		}
 	}
 
-	*iterations = iter;
 
 	free(clusters[0]);
 	free(clusters);
