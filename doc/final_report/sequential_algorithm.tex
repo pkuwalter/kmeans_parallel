@@ -1,0 +1,34 @@
+\section{Sequential Algorithm}
+K-means clustering is an NP-hard problem in general Euclidean space 
+$\mathbb{R}^d$~\cite{k-means-euclidean}
+and even for instances on a plane~\cite{k-means-plane}. The sequential
+algorithm below is a heuristic algorithm which does not guarantee
+a global optimal. 
+
+\begin{algorithm}
+  \caption{Sequential k-means clustering} \label{seq}
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
+    \Function{seq\_k-means}{$p, N, K$}
+    \State Randomly generate $K$ points as cluster centroids $c[]$
+    \While {!termination\_condition }
+    \For {i = 1..N}
+    \For {j = 1..K}
+    \For {dd = 1..d}
+    \State $distance += (p(i)(dd) - c(j)(dd))^2$
+    \EndFor
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Assign each point to the nearest cluster centroid
+    \State Accumulate $p(i)$'s coordinates
+    \State divide the accumulated coords by num\_points to get the new centroid
+    \EndFor
+    \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\vspace{5mm}
+\noindent
+Suppose m is the number of iterations in a run. \\
+The complexity of this algorithm is O(NKdm). 

@@ -7,6 +7,8 @@
 \usepackage{algorithmicx}
 \usepackage{algorithm}
 \usepackage{geometry}
+\usepackage{multirow}
+\usepackage{graphicx}
 \geometry{margin=1in}
 
 \begin{document}
@@ -26,193 +28,13 @@
 
 \algnewcommand\algorithmicinput{\textbf{INPUT:}}
 \algnewcommand\INPUT{\item[\algorithmicinput]}
-\section{Sequential Algorithm}
-K-means clustering is an NP-hard problem in general Euclidean space 
-$\mathbb{R}^d$~\cite{k-means-euclidean}
-and even for instances on a plane~\cite{k-means-plane}. The sequential
-algorithm below is a heuristic algorithm which does not guarantee
-a global optimal. 
 
-\begin{algorithm}
-  \caption{Sequential k-means clustering} \label{seq}
-  \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
-    \Function{seq\_k-means}{$p, N, K$}
-    \State Randomly generate $K$ points as cluster centroids $c[]$
-    \While {!termination\_condition }
-    \For {i = 1..N}
-    \For {j = 1..K}
-    \For {dd = 1..d}
-    \State $distance += (p(i)(dd) - c(j)(dd))^2$
-    \EndFor
-    \EndFor
-    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
-    \State Assign each point to the nearest cluster centroid
-    \State Accumulate $p(i)$'s coordinates
-    \State divide the accumulated coords by num\_points to get the new centroid
-    \EndFor
-    \EndWhile
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
+\input{sequential_algorithm}
+\input{parallel_algorithm}
+\input{evaluation}
+\input{conclusion}
 
-\vspace{5mm}
-\noindent
-Suppose m is the number of iterations in a run. \\
-The complexity of this algorithm is O(NKdm). 
 
-\section{Parallel k-means clustering}
-An obvious way to parallelize the algorithm is to parallelize the
-parts for membership assignment and recomputation on new centroids.
-
-There are two ways to compute distance between point $p(i)$
-and centroid $c(j)$. Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ and $c(j) = (c_{j1},
-c_{j2}, ..., c_{jd})$, the squared Euclidean distance between point p(i) and centroid c(j): 
-\begin{align}
-d(p(i),c(j)) &= (p_{i1} - c_{j1})^2 + (p_{i2} - c_{j2})^2 + ... + (p_{id} - c_{jd})^2 \label{e1}\\
-&= (p_{i1}^2 + p_{i2}^2 + ... + p_{id}^2) - (2*p_{i1}*c_{j1} + 2*p_{i2}*c_{j2} + ... + 2*p_{id}*c_{jd})
-+ (c_{j1}^2 + c_{j2}^2 + ... + c_{jd}^2) \label{e2}
-\end{align}
-
-Algorithm implements \ref{e1} is listed in Algorithm~\ref{par}. 
-\begin{algorithm}[!htp]
-  \caption{Parallel k-means clustering} \label{par}
-  \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
-    \Function{par\_k-means}{$p, N, K$} \label{alg:p}
-    \State Randomly choose $K$ points as cluster centroids $c[]$
-    \While {! termination\_condition}
-    \ParFor {i = 1..N}
-    \For {j = 1..K}
-    \For {dd = 1..d}
-    \State $distance += (p(i)(dd) - c(j)(dd))^2$
-    \EndFor
-    \EndFor
-    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
-    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
-    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
-    \EndParFor
-    \State Compute new $c[]$: divide the accumulated coords by num\_points
-    \State Recalculate termination condition
-    \EndWhile
-    \EndFunction  
-  \end{algorithmic}
-\end{algorithm}
-Suppose m is the number of iterations in a run. The work-depth model for this algorithm is:
-Work = O(NKdm), Depth = O(Kdm).
-
-\ref{e2} can be structured as vector norm of each row of matrix (norm of p(i) and c(j)) and
-a matrix-matrix multiplication (p * c). The algorithm is shown in~\ref{par_m}
-\begin{algorithm}[!htp]
-  \caption{Parallel k-means clustering using matrix operation} \label{par_m}
-  \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
-    \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
-    \State Randomly choose $K$ points as cluster centroids $c[]$
-    \While {! termination\_condition}
-    \For {i = 1..N}
-    \State $p\_norm(i) = norm(p(i))$
-    \EndFor
-    \For {j = 1..K}
-    \State $c\_norm(j) = norm(c(j))$
-    \EndFor
-    \State $pc\_product = 2 .* p' * c$
-    \ParFor {i = 1..N}
-    \For {j = 1..K}
-    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
-    \EndFor
-    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
-    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
-    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
-    \EndParFor
-    \State Compute new $c[]$: divide the accumulated coords by num\_points
-    \State Recalculate termination condition
-    \EndWhile
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-The work-depth model for this algorithm is: Work = O(2Ndm + Kdm + NKdm + NKm), Depth = O($D(norm(d))*N*m + (norm(d))*K*m + D(matrix product(NKd))*m + Km + dm$).
-
-We implement algorithm~\ref{par_m} using cublasSgemm for matrix matrix multiplication and cublasSnrm2
-for vector norm and evaluate the performance of this algorithm. Surprisingly, it runs slower than
-sequential algorithm. We find that calculating the vector norm using cublasSnrm2 is pretty slow while
-matrix-matrix multiplication is really fast.
-
-Given that there are no provided function to calculate the
-norm of each row of a matrix simultaneous, we come up with an idea to implement vector norm using matrix-matrix multiplication. For a matrix A, the norm of each row of matrix is at the diagonal of A * A'. The
-algorithm is shown in~\ref{par_vn_m}. 
-\begin{algorithm}[!htp]
-  \caption{Parallel k-means clustering using matrix operation with vector norm calculating using
-    matrix-matrix multiplication} \label{par_vn_m}
-  \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
-    \Function{par\_k-means-matrix-v2}{$p, N, K$} \label{alg:pm2}
-    \State Randomly choose $K$ points as cluster centroids $c[]$
-    \While {! termination\_condition}
-    \State $p\_norm = diag(p * p')$
-    \State $c\_norm = diag(c * c')$
-    \State $pc\_product = 2 .* p' * c$
-    \ParFor {i = 1..N}
-    \For {j = 1..K}
-    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
-    \EndFor
-    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
-    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
-    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
-    \EndParFor
-    \State Compute new $c[]$: divide the accumulated coords by num\_points
-    \State Recalculate termination condition
-    \EndWhile
-    \EndFunction
-  \end{algorithmic}
-\end{algorithm}
-The work depth model for this algorithm is: Work = O($N^2dm + K^2dm + NKdm + NKm$),
-Depth = O($D(matrix product(N^2d))*m + D(matrix product(K^2d)*m) + D(matrix product(NKd))*m+ Km + dm$).
-We do not know how cuBlas implements matrix-matrix multiplication and vector norm, so we put place holder
-in depth for algorithm~\ref{par_m}\ref{par_vn_m}. 
-
-\section{Evaluation}
-\subsection{Experiment platform and implementation}
-We implement all algorithms in cuda and cuBlas and evaluate parallel performance on one GPU node which
-has two Nvidia M2090 on TACC Lonestar. Sequential implementation is tested on CPU node with
-Intel Xeon X5680 3.33GHz processor. We use one GPU to run our experiment. Nvidia M2090 is in Fermi
-architecture which supports compute 2.0 capability. The peak single precision floating point performance
-is 1331 GFlops. The GPU runs with CUDA 6.5 driver, 5.0
-runtime library and Nvidia driver 340.32. For our implementation, we use CUDA 5.0 runtime and cublas API.
-During development, we use a local GPU, Nvidia C2075 in Fermi architecture with CUDA 6.5 runtime and cuBl
-as API and Nvidia driver 340.29. Peak single precision floating point performance is 1030 GFlops.
-We find that our GPU code runs significant faster on our local machine than on TACC. Our GPU code
-performance depends on hardware it is running on and version of CUDA API. Later version of compiler may
-have optimization that results in this difference. 
-
-\section{Scalability}
-We evaluate the scalability of the first parallel algorithm. We cannot control how many CUDA threads it
-spawns for algorithms using cuBlas library, so we just compare the performance using the same input size.
-With different initial assignment of centroids, algorithms may terminate with different iterations which
-impact performance measurement, so we enforce all algorithms run 50 iterations and needs to construct
-120 centroids. 
-
-\subsection{Strong scaling}
-The input size is 640000 points with 40 dimension. Result is shown in table~\ref{tab:strong-scaling}. 
-\begin{table}[ht]
-  \centering
-  \begin{tabular}{|c|c|c|c|c|c|c|c|}
-    \hline
-    Number of threads	& 10000	    & 20000	    & 40000	& 80000	& 160000 & 320000	& 640000 \\
-    \hline
-    Points per thread &	64	      & 32	      & 16	  & 8	    & 4	     & 2	    & 1 \\
-    \hline
-    Time (s)	   & 14.968109 &	14.739549	& 14.083437	& 13.965568	& 13.923301	& 13.901065	& 13.893361\\
-    \hline
-  \end{tabular}
-  \label{tab:strong-scaling}
-  \caption{Strong scaling test for parallel algorithm~\ref{par}}
-\end{table}
- 
-
-\subsection{Weak scaling}
-
-\subsection{Comparison between sequential and parallel algorithms}
 
 \bibliographystyle{acm}
 \bibliography{bibliography}

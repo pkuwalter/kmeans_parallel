@@ -1,0 +1,90 @@
+\section{Evaluation}
+\subsection{Experiment platform and implementation}
+We implement all algorithms in cuda and cuBlas and evaluate parallel performance on one GPU node which
+has two Nvidia M2090 on TACC Lonestar. Sequential implementation is tested on CPU node with
+Intel Xeon X5680 3.33GHz processor. We use one GPU to run our experiment. Nvidia M2090 is in Fermi
+architecture which supports compute 2.0 capability. The peak single precision floating point performance
+is 1331 GFlops. The GPU runs with CUDA 6.5 driver, 5.0
+runtime library and Nvidia driver 340.32. For our implementation, we use CUDA 5.0 runtime and cublas API.
+During development, we use a local GPU, Nvidia C2075 in Fermi architecture with CUDA 6.5 runtime and cuBl
+as API and Nvidia driver 340.29. Peak single precision floating point performance is 1030 GFlops.
+We find that our GPU code runs significant faster on our local machine than on TACC. Our GPU code
+performance depends on hardware it is running on and version of CUDA API. Later version of compiler may
+have optimization that results in this difference. 
+
+\section{Scalability}
+We evaluate the scalability of the first parallel algorithm. We cannot control how many CUDA threads it
+spawns for algorithms using cuBlas library, so we just compare the performance using the same input size.
+With different initial assignment of centroids, algorithms may terminate with different iterations which
+impact performance measurement, so we enforce all algorithms run 50 iterations and needs to construct
+120 centroids. 
+
+\subsection{Strong scaling}
+The input size is 640000 points with 40 dimension. Result is shown in Table~\ref{tab:strong-scaling}. 
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|c|c|}
+    \hline
+    Number of threads	& 10000	    & 20000	    & 40000	& 80000	& 160000 & 320000	& 640000 \\
+    \hline
+    Points per thread &	64	      & 32	      & 16	  & 8	    & 4	     & 2	    & 1 \\
+    \hline
+    Time (s)	   & 14.968109 &	14.739549	& 14.083437	& 13.965568	& 13.923301	& 13.901065	& 13.893361\\
+    \hline
+  \end{tabular}
+  \label{tab:strong-scaling}
+  \caption{Strong scaling test for parallel algorithm~\ref{par}}
+\end{table}
+ 
+\subsection{Weak scaling}
+For weak scaling, we put one point per thread. The number of points equals the total number of threads.
+Result is listed in Table~\ref{tab:weak-scaling}.
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|c|c|}
+    \hline
+    Number of points	& 10000	& 20000	& 40000	& 80000	& 160000	& 320000	& 640000 \\
+    \hline
+    Time (s)	& 5.150253	& 5.334522	& 5.56897	& 6.212595	& 7.27669	& 9.324087	& 13.882712 \\
+    \hline
+  \end{tabular}
+  \label{tab:weak-scaling}
+  \caption{Weak scaling test for parallel algorithm~\ref{par}}
+\end{table}
+
+\subsection{Comparison between sequential and parallel algorithms}
+We compare sequential algorithm with three versions of parallel algorithm. For each algorithm, it
+receives the same input size. For the first algorithm, each thread handles one point. Result is shown in
+Table~\ref{tab:comparison} and Figure~\ref{fig:all} and \ref{fig:par}. Parallel v1, v2, v3 correspond to
+Algorithm~\ref{par}, \ref{par_m} and \ref{par_vn_m} respectively.   
+\begin{table}[!h]
+  \centering
+  \begin{tabular}{|p{1cm}|p{1.4cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|}
+    \hline
+    & Number of points	& 10000	& 20000	& 40000	& 80000	& 160000	& 320000	& 640000 \\
+    \hline
+    \multirow{4}{*}{Time(s)}	& sequential	& 13.342232	& 26.397233	& 52.528985	& 105.077747	& 210.116223	& 420.287315	& 840.63679 \\
+    \cline{2-9}
+	  & parallel v1	& 5.150253	& 5.334522	& 5.56897	& 6.212595	& 7.27669	& 9.324087	& 13.882712 \\
+    \cline{2-9}
+	  & parallel v2	& 5.914093	& 6.602768	& 7.930681	& 10.267001	& 15.379849	& 25.136588	& 44.041563 \\
+    \cline{2-9}
+	  & parallel v3	& 5.308004	& 5.559447	& 6.048962	& 6.932199	& 8.955507	& 12.66189	& 20.017067 \\
+    \hline
+  \end{tabular}
+  \label{tab:comparison}
+  \caption{Comparison of running time between sequential and three versions of parallel algorithms}
+\end{table}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=\linewidth]{fig/all_comparison}
+  \caption{Comparison of running time between sequential and three versions of parallel algorithms}
+  \label{fig:all}
+\end{figure}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{fig/parallel_algorithm_comparison}
+  \caption{Comparison of three parallel algorithms}
+  \label{fig:par}
+\end{figure}
