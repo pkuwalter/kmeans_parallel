@@ -1,4 +1,4 @@
-#include "file_io.h";
+#include "file_io.h"
 
 float** file_read(char *filename, int  *num_points, int  *num_coords) {
 	float** retval;
