@@ -451,6 +451,9 @@ printf("prep time = %lld microseconds\n", (long long) duration);
 start = GetTimeMius64();
 #endif
 
+    memset (device_pc_product, 0, pc_product_length);
+    memset (device_p_product, 0, p_product_length);
+    memset (device_c_product, 0, c_product_length);
 
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
     // 1. Use cuBLAS to compute x_i*c_j
@@ -458,7 +461,7 @@ start = GetTimeMius64();
     stat = cublasCreate(&handle);
 
     stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
-    stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points, num_coords, device_points, num_coords);
+    stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points[0], num_coords, device_points, num_coords);
     stat = cublasSetMatrix(num_clusters, num_points, sizeof(float), pc_product, num_clusters, device_pc_product, num_clusters);
 #ifdef PRODUCT_FOR_NORM
     stat = cublasSetMatrix(num_points, num_points, sizeof(float), p_product, num_points, device_p_product, num_points);
