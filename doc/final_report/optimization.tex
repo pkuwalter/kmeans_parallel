@@ -1,0 +1,33 @@
+\section{Architecture-Related Optimizations}
+\label{s:optimization}
+
+When tuning the program performance, especially Algorithm~\ref{par}, we use several
+GPU architecture-related optimizations. Especially, coalesced memory access 
+benefits the most, followed by the usage of high-speed memory regions and
+prefetching.
+
+\subsection{CUDA Memory Hierachy}
+
+CUDA threads can access data from several different memory regions in GPU. Each 
+thread has its own local and private memory. Each \TB has its own shared
+memory regions that is accessible to all threads inside the \TB. The
+global memory is large and shared by all the threads. Besides, there are also two 
+additional globally-shared read-only memory spaces: the constant and texture memory
+spaces ~\cite{cuda-program-guide}.
+
+Per-thread-accessible registers has negligible read/write overhead compared to 
+other kinds of memory access. But the total size of globally usable registers is 
+fixed, and will decrease the degree of parallelism if the per \TB usage is high.
+Shared memory is also a fast and restricted resource, compared to global memory.
+The access to the global memory is generally the slowest and dependent on the 
+access pattern. A coalesced access can help achieve higher throughput
+~\cite{kepler-tuning}. We did not use the context and texture memory in this 
+implemetation considering their low flexibility.
+
+
+\subsection{Coalesced Memory Access}
+
+\subsection{High-Speed Memory}
+
+
+\subsection{Prefetching}

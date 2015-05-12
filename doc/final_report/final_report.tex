@@ -9,6 +9,7 @@
 \usepackage{geometry}
 \usepackage{multirow}
 \usepackage{graphicx}
+\usepackage{xspace}
 \geometry{margin=1in}
 
 \begin{document}
@@ -26,11 +27,15 @@
 \algrenewtext{ParFor}[1]{\algorithmicparfor\ #1\ \algorithmicpardo}
 \algrenewtext{EndParFor}{\algorithmicendparfor}
 
+\newcommand{\TB}[0]{threadblock\xspace}
+\newcommand{\TBs}[0]{threadblocks\xspace}
+
 \algnewcommand\algorithmicinput{\textbf{INPUT:}}
 \algnewcommand\INPUT{\item[\algorithmicinput]}
 
 \input{sequential_algorithm}
 \input{parallel_algorithm}
+\input{optimization}
 \input{evaluation}
 \input{conclusion}
 
