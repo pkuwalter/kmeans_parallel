@@ -425,6 +425,7 @@ printf("prep time = %lld microseconds\n", (long long) duration);
 start = GetTimeMius64();
 #endif
 
+    memset (pc_product, 0, pc_product_length);
 
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
     // 1. Use cuBLAS to compute x_i*c_j
