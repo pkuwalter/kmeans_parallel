@@ -381,6 +381,13 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	checkCudaError(__LINE__, cudaMemcpy(device_membership,
 			membership, num_points * sizeof(int), cudaMemcpyHostToDevice));
 
+  stat = cublasCreate(&handle);
+
+  for (i = 0; i < num_points; i ++) {
+    stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
+    stat = cublasSnrm2(handle, num_coords, d_vector, 1, &point_norm[i]);
+  }
+
 	// K-mean calculation
 	int iter = 0;
 	int membership_changes = num_points;
@@ -429,26 +436,25 @@ start = GetTimeMius64();
 
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
     // 1. Use cuBLAS to compute x_i*c_j
-
-    stat = cublasCreate(&handle);
-
     stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
     stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points[0], num_coords, device_points, num_coords);
     stat = cublasSetMatrix(num_clusters, num_points, sizeof(float), pc_product, num_clusters, device_pc_product, num_clusters);
+
+		cudaDeviceSynchronize();
 
     stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_clusters, num_points, 
               num_coords, &alpha, device_trans_clusters, num_clusters, 
               device_points, num_coords, &beta, device_pc_product, num_clusters);
 
+		cudaDeviceSynchronize();
+
     // 2. Compute (x_i)^2 and (c_j)^2
-    for (i = 0; i < num_points; i ++) {
-      stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
-      stat = cublasSnrm2(handle, num_coords, d_vector, 1, &point_norm[i]);
-    }
     for (i = 0; i < num_clusters; i ++) {
       stat = cublasSetVector(num_coords, sizeof(float), retval[i], 1, d_vector, 1);
       stat = cublasSnrm2(handle, num_coords, d_vector, 1, &cluster_norm[i]);
     }
+
+		cudaDeviceSynchronize();
 
   	checkCudaError(__LINE__, cudaMemcpy(device_point_norm, point_norm,
 				num_points * sizeof(float), cudaMemcpyHostToDevice));
