@@ -407,6 +407,21 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	checkCudaError(__LINE__, cudaMemcpy(device_membership,
 			membership, num_points * sizeof(int), cudaMemcpyHostToDevice));
 
+  stat = cublasCreate(&handle);
+
+  stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_points, 
+            num_points, num_coords, &alpha_2, device_trans_points, 
+            num_points, device_points, num_coords, &beta, device_p_product, 
+            num_points);
+
+  cudaDeviceSynchronize();
+
+  for (i = 0; i < num_points; i ++) {
+   	checkCudaError(__LINE__, cudaMemcpy(device_point_norm + i,
+        device_p_product + num_coords * i + i, sizeof(float),
+        cudaMemcpyDeviceToDevice));
+  }
+
 	// K-mean calculation
 	int iter = 0;
 	int membership_changes = num_points;
@@ -458,8 +473,6 @@ start = GetTimeMius64();
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
     // 1. Use cuBLAS to compute x_i*c_j
 
-    stat = cublasCreate(&handle);
-
     stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
     stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points[0], num_coords, device_points, num_coords);
     stat = cublasSetMatrix(num_clusters, num_points, sizeof(float), pc_product, num_clusters, device_pc_product, num_clusters);
@@ -468,7 +481,7 @@ start = GetTimeMius64();
     stat = cublasSetMatrix(num_clusters, num_clusters, sizeof(float), c_product, num_clusters, device_c_product, num_clusters);
 #endif
 
-#ifdef KERNAL_TIMING
+#ifdef BLAS_TIMING
 int64_t start2 = GetTimeMius64();
 #endif
 
@@ -476,65 +489,33 @@ int64_t start2 = GetTimeMius64();
               num_coords, &alpha_2, device_trans_clusters, num_clusters, 
               device_points, num_coords, &beta, device_pc_product, num_clusters);
 
-#ifdef KERNAL_TIMING
+    cudaDeviceSynchronize();
+
+#ifdef BLAS_TIMING
 int64_t duration2 = GetTimeMiusFrom(start2);
 printf("Sgemm x*c time = %lld microseconds\n", (long long) duration2);
 start2 = GetTimeMius64();
 #endif
 
     // 2. Compute (x_i)^2 and (c_j)^2
-#ifndef PRODUCT_FOR_NORM
-
-    for (i = 0; i < num_points; i ++) {
-      stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
-      stat = cublasSnrm2(handle, num_coords, d_vector, 1, &point_norm[i]);
-    }
-
-#ifdef KERNAL_TIMING
-duration2 = GetTimeMiusFrom(start2);
-printf("Sgemm x^2 time = %lld microseconds\n", (long long) duration2);
-start2 = GetTimeMius64();
-#endif
-
-    for (i = 0; i < num_clusters; i ++) {
-      stat = cublasSetVector(num_coords, sizeof(float), retval[i], 1, d_vector, 1);
-      stat = cublasSnrm2(handle, num_coords, d_vector, 1, &cluster_norm[i]);
-    }
-
-#ifdef KERNAL_TIMING
-duration2 = GetTimeMiusFrom(start2);
-printf("Sgemm c^2 time = %lld microseconds\n", (long long) duration2);
-start2 = GetTimeMius64();
-#endif
-
-  	checkCudaError(__LINE__, cudaMemcpy(device_point_norm, point_norm,
-				num_points * sizeof(float), cudaMemcpyHostToDevice));
-  	checkCudaError(__LINE__, cudaMemcpy(device_cluster_norm, cluster_norm,
-				num_clusters * sizeof(float), cudaMemcpyHostToDevice));
-
-#else
-
-    stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_points, 
-              num_points, num_coords, &alpha_2, device_trans_points, 
-              num_points, device_points, num_coords, &beta, device_p_product, 
-              num_points);
 
     stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_clusters, 
               num_clusters, num_coords, &alpha_2, device_trans_clusters, 
               num_clusters, device_clusters, num_coords, &beta, 
               device_c_product, num_points);
 
-    for (i = 0; i < num_points; i ++) {
-     	checkCudaError(__LINE__, cudaMemcpy(device_point_norm + i,
-          device_p_product + num_coords * i + i, sizeof(float),
-          cudaMemcpyDeviceToDevice));
-    }
+    cudaDeviceSynchronize();
+
     for (i = 0; i < num_clusters; i ++) {
      	checkCudaError(__LINE__, cudaMemcpy(device_cluster_norm + i,
           device_c_product + num_coords * i + i, sizeof(float),
           cudaMemcpyDeviceToDevice));
     }
-   
+
+#ifdef BLAS_TIMING
+duration2 = GetTimeMiusFrom(start2);
+printf("Nrm2 time = %lld microseconds\n", (long long) duration2);
+start2 = GetTimeMius64();
 #endif
 
     // 3. Compute nearest cluster
