@@ -24,11 +24,13 @@ __global__
 void nearest_cluster(float *points, float *clusters, int num_points, int num_coords, int num_clusters,
 		float *new_clusters, int *membership, int *membership_changes, int *clusters_size) {
 
+  unsigned int gdim = gridDim.x;
 	unsigned int bid = blockIdx.x;
 	unsigned int bdim = blockDim.x;
 	unsigned int tid = threadIdx.x;
+  unsigned int num_threads = gdim * bdim;
 	//unsigned int clusters_length = num_clusters * num_coords;
-  unsigned int obj_idx = bid * bdim + tid;
+  unsigned int obj_idx;
 
 	extern __shared__ float shared[];
 	float *s_clusters = shared;
@@ -39,17 +41,19 @@ void nearest_cluster(float *points, float *clusters, int num_points, int num_coo
   int length_per_time = s_per_time * num_coords;
   int times = (int) num_clusters / s_per_time;
 
-  int new_cluster_idx = 0;
-  float dist, min_dist = 3.40282e+38;
+  for (obj_idx = bid * bdim + tid; obj_idx < num_points; obj_idx += num_threads) {
 
-  // save centroids into shared memory by tiles, and calculate distances
-  for (int t = 0; t < times; t ++) {
+    int new_cluster_idx = 0;
+    float dist, min_dist = 3.40282e+38;
 
-    for (int i = tid; i < length_per_time; i ++) {
-      s_clusters[i] = clusters[t * s_per_time + i];
-    }
+    // save centroids into shared memory by tiles, and calculate distances
+    for (int t = 0; t < times; t ++) {
 
-	  __syncthreads();
+      for (int i = tid; i < length_per_time; i ++) {
+        s_clusters[i] = clusters[t * s_per_time + i];
+      }
+
+	    __syncthreads();
 
 #ifdef DEVICE_TIMING
 clock_t start;
@@ -57,42 +61,35 @@ clock_t duration;
 if (tid == 0) { start = clock(); }
 #endif
 
-	  if (obj_idx < num_points) {
-
       for (int i = 0; i < s_per_time; i++) {
-      if ((dist = dist_square(num_coords, num_points, points, obj_idx, 
-            &s_clusters[i * num_coords]))
-			  		< min_dist) {
-				  min_dist = dist;
-				  new_cluster_idx = i;
-	  		}
-		  }
-    }
-  }
-
-  // process the remaining clusters.
-  // The final loop is unrolled to avoid an extra comparison in the previous loops
-  for (int t = times * s_per_time; t < num_clusters; t ++) {
-
-    for (int i = tid; i < (num_clusters - times * s_per_time) * num_coords; i ++) {
-      s_clusters[i] = clusters[times * s_per_time + i];
+        if ((dist = dist_square(num_coords, num_points, points, obj_idx, 
+              &s_clusters[i * num_coords]))
+			  	  	< min_dist) {
+				    min_dist = dist;
+			  	  new_cluster_idx = i;
+	      }
+	  	}
     }
 
-    __syncthreads();
+    // process the remaining clusters.
+    // The final loop is unrolled to avoid an extra comparison in the previous loops
+    for (int t = times * s_per_time; t < num_clusters; t ++) {
 
-    if (obj_idx < num_points) {
+      for (int i = tid; i < (num_clusters - times * s_per_time) * num_coords; i ++) {
+        s_clusters[i] = clusters[times * s_per_time + i];
+      }
+
+      __syncthreads();
 
       for (int i = 0; i < num_clusters - times * s_per_time; i++) {
-      if ((dist = dist_square(num_coords, num_points, points, obj_idx, 
-            &s_clusters[i * num_coords]))
-            < min_dist) {
-          min_dist = dist;
-          new_cluster_idx = i;
+        if ((dist = dist_square(num_coords, num_points, points, obj_idx, 
+              &s_clusters[i * num_coords]))
+              < min_dist) {
+            min_dist = dist;
+            new_cluster_idx = i;
         }
       }
     }
-
-  }
 
 #ifdef DEVICE_TIMING
 if (tid == 0) {
@@ -102,7 +99,6 @@ start = clock();
 }
 #endif
 
-  if (obj_idx < num_points) {
     int old_cluster_idx = membership[obj_idx];
 	  #ifdef SYNCOUNT
   	membership_changes[bid] = __syncthreads_count(old_cluster_idx != new_cluster_idx);
@@ -126,10 +122,9 @@ start = clock();
 	  for (int i = 0; i < num_coords; i++) {
 		  atomicAdd(&new_clusters[new_cluster_idx * num_coords + i], 
             points[i * num_points + obj_idx]);
-  	}
-  }
+	  }
 
-	__syncthreads();
+  	__syncthreads();
 
 #ifdef DEVICE_TIMING
 if (tid == 0) {
@@ -139,6 +134,7 @@ start = clock();
 }
 #endif
 
+  }
 }
 
 inline void checkCudaError(cudaError_t error) {
