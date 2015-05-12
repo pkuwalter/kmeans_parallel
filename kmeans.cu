@@ -451,6 +451,7 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
   checkCudaError(__LINE__, cudaMemcpy(device_point_norm, point_norm,
 	  	num_points * sizeof(float), cudaMemcpyHostToDevice));
 
+  stat = cublasCreate(&handle);
 #ifndef PRODUCT_FOR_NORM
   vec_norm(&handle, points, &device_points, num_points, num_coords, &device_point_norm);
 #endif
@@ -505,8 +506,6 @@ start = GetTimeMius64();
 
     // (x_i - c_j)^2 = (x_i)^2 + (c_j)^2 - 2*x_i*c_j
     // 1. Use cuBLAS to compute x_i*c_j
-
-    stat = cublasCreate(&handle);
 
     stat = cublasSetMatrix(num_clusters, num_coords, sizeof(float), trans_clusters, num_clusters, device_trans_clusters, num_clusters);
     stat = cublasSetMatrix(num_coords, num_points, sizeof(float), points[0], num_coords, device_points, num_coords);
