@@ -448,6 +448,13 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
 	checkCudaError(__LINE__, cudaMemcpy(device_membership,
 			membership, num_points * sizeof(int), cudaMemcpyHostToDevice));
 
+  checkCudaError(__LINE__, cudaMemcpy(device_point_norm, point_norm,
+	  	num_points * sizeof(float), cudaMemcpyHostToDevice));
+
+#ifndef PRODUCT_FOR_NORM
+  vec_norm(&handle, points, &device_points, num_points, num_coords, &device_point_norm);
+#endif
+
 	// K-mean calculation
 	int iter = 0;
 	int membership_changes = num_points;
@@ -519,7 +526,7 @@ printf("Sgemm x*c time = %lld microseconds\n", (long long) duration2);
 start2 = GetTimeMius64();
 #endif
 
-    // 2. Compute (x_i)^2 and (c_j)^2
+    // 2. Compute (c_j)^2, (x_i)^2 pre-computed, loop-invariant
 #ifndef PRODUCT_FOR_NORM
 
     for (i = 0; i < num_points; i ++) {
@@ -544,38 +551,11 @@ printf("Sgemm c^2 time = %lld microseconds\n", (long long) duration2);
 start2 = GetTimeMius64();
 #endif
 
-  	checkCudaError(__LINE__, cudaMemcpy(device_point_norm, point_norm,
-				num_points * sizeof(float), cudaMemcpyHostToDevice));
   	checkCudaError(__LINE__, cudaMemcpy(device_cluster_norm, cluster_norm,
 				num_clusters * sizeof(float), cudaMemcpyHostToDevice));
 
 #else
 
-#if 0
-    stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_points, 
-              num_points, num_coords, &alpha_2, device_trans_points, 
-              num_points, device_points, num_coords, &beta, device_p_product, 
-              num_points);
-
-    stat = cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, num_clusters, 
-              num_clusters, num_coords, &alpha_2, device_trans_clusters, 
-              num_clusters, device_clusters, num_coords, &beta, 
-              device_c_product, num_points);
-
-    for (i = 0; i < num_points; i ++) {
-     	checkCudaError(__LINE__, cudaMemcpy(device_point_norm + i,
-          device_p_product + num_coords * i + i, sizeof(float),
-          cudaMemcpyDeviceToDevice));
-    }
-
-    for (i = 0; i < num_clusters; i ++) {
-     	checkCudaError(__LINE__, cudaMemcpy(device_cluster_norm + i,
-          device_c_product + num_coords * i + i, sizeof(float),
-          cudaMemcpyDeviceToDevice));
-    }
-#endif
-
-  vec_norm(&handle, points, &device_points, num_points, num_coords, &device_point_norm);
   vec_norm(&handle, clusters, &device_clusters, num_clusters, num_coords, &device_cluster_norm);
 
 #endif
@@ -584,7 +564,7 @@ start2 = GetTimeMius64();
 
 #ifdef KERNAL_TIMING
 duration = GetTimeMiusFrom(start);
-printf("CuBLAS time = %lld microseconds\n", (long long) duration);
+printf("Norm time = %lld microseconds\n", (long long) duration);
 start = GetTimeMius64();
 #endif
 
