@@ -12,14 +12,14 @@ We find that our GPU code runs significant faster on our local machine than on T
 performance depends on hardware it is running on and version of CUDA API. Later version of compiler may
 have optimization that results in this difference. 
 
-\section{Scalability}
+\subsection{Scalability}
 We evaluate the scalability of the first parallel algorithm. We cannot control how many CUDA threads it
 spawns for algorithms using cuBlas library, so we just compare the performance using the same input size.
 With different initial assignment of centroids, algorithms may terminate with different iterations which
 impact performance measurement, so we enforce all algorithms run 50 iterations and needs to construct
 120 centroids. 
 
-\subsection{Strong scaling}
+\subsubsection{Strong scaling}
 The input size is 640000 points with 40 dimension. Result is shown in Table~\ref{tab:strong-scaling} and
 Figure~\ref{fig:strong_scaling}. 
 \begin{table}[ht]
@@ -43,7 +43,7 @@ Figure~\ref{fig:strong_scaling}.
   \label{fig:strong_scaling}
 \end{figure}
 
-\subsection{Weak scaling}
+\subsubsection{Weak scaling}
 For weak scaling, we put one point per thread. The number of points equals the total number of threads.
 Result is listed in Table~\ref{tab:weak-scaling} and Figure~\ref{fig:weak_scaling}.
 \begin{table}[ht]
@@ -65,7 +65,7 @@ Result is listed in Table~\ref{tab:weak-scaling} and Figure~\ref{fig:weak_scalin
   \label{fig:weak_scaling}
 \end{figure}
 
-\subsection{Comparison between sequential and parallel algorithms}
+\subsubsection{Comparison between sequential and parallel algorithms}
 We compare sequential algorithm with three versions of parallel algorithm. For each algorithm, it
 receives the same input size. For the first algorithm, each thread handles one point. Result is shown in
 Table~\ref{tab:comparison} and Figure~\ref{fig:all} and \ref{fig:par}. Parallel v1, v2, v3 correspond to
