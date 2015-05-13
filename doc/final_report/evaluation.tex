@@ -67,7 +67,8 @@ Result is listed in Table~\ref{tab:weak-scaling} and Figure~\ref{fig:weak_scalin
 
 \subsubsection{Comparison between sequential and parallel algorithms}
 We compare sequential algorithm with three versions of parallel algorithm. For each algorithm, it
-receives the same input size. For the first algorithm, each thread handles one point. Result is shown in
+receives the same input size. 
+For the first algorithm, each thread handles one point. Result is shown in
 Table~\ref{tab:comparison} and Figure~\ref{fig:all} and \ref{fig:par}. Parallel v1, v2, v3 correspond to
 Algorithm~\ref{par}, \ref{par_m} and \ref{par_vn_m} respectively.   
 \begin{table}[!h]
@@ -103,6 +104,7 @@ Algorithm~\ref{par}, \ref{par_m} and \ref{par_vn_m} respectively.
   \end{minipage}
 \end{figure}
 
-From Figure~\ref{fig:par}, the hand-turned cuda implementation runs the best, followed by implementation
-using cublas matrix-matrix multiplication and using matrix multiplication to calculate vector norm
-and the slowest is the one using cublas snorm2 for vector norm. 
+From Figure~\ref{fig:par}, the hand-turned cuda implementation (Algorithm~\ref{par})
+is the most performant, followed by the implementation using a mixed cuBLAS and 
+customized functions (Algorithm~\ref{par_m}).
+The one purely using cuBLAS native functions is the slowest.
