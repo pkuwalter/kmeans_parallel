@@ -24,13 +24,13 @@ The input size is 640000 points with 40 dimension. Result is shown in Table~\ref
 Figure~\ref{fig:strong_scaling}. 
 \begin{table}[ht]
   \centering
-  \begin{tabular}{|c|c|c|c|c|c|c|c|}
+  \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
-    Number of threads	& 10000	    & 20000	    & 40000	& 80000	& 160000 & 320000	& 640000 \\
+    Number of threads	& 1000	    & 2000	    & 4000	& 8000	& 16000 & 32000\\
     \hline
-    Points per thread &	64	      & 32	      & 16	  & 8	    & 4	     & 2	    & 1 \\
+    Points per thread 	&640	&320	&160	&80	&40	&20 \\
     \hline
-    Time (s)	   & 14.968109 &	14.739549	& 14.083437	& 13.965568	& 13.923301	& 13.901065	& 13.893361\\
+    Time (s)	 & 71.100505	& 39.540554	& 23.712905	& 16.106382	& 14.376102	& 14.406176	\\
     \hline
   \end{tabular}
   \label{tab:strong-scaling}
@@ -48,11 +48,11 @@ For weak scaling, we put one point per thread. The number of points equals the t
 Result is listed in Table~\ref{tab:weak-scaling} and Figure~\ref{fig:weak_scaling}.
 \begin{table}[ht]
   \centering
-  \begin{tabular}{|c|c|c|c|c|c|c|c|}
+  \begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
-    Number of points	& 10000	& 20000	& 40000	& 80000	& 160000	& 320000	& 640000 \\
+    Number of points	& 1000	& 2000	& 4000	& 8000	& 16000	& 32000 \\
     \hline
-    Time (s)	& 5.150253	& 5.334522	& 5.56897	& 6.212595	& 7.27669	& 9.324087	& 13.882712 \\
+    Time (s)	 &4.959575	&4.995409	&4.990718	&5.086688	&5.214874	&5.493174\\
     \hline
   \end{tabular}
   \label{tab:weak-scaling}
