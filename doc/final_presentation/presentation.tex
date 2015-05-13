@@ -78,19 +78,30 @@ fleqn]{powerdot}
 \end{slide}
 
 \begin{slide} {Sequential Algorithm}
+  \footnotesize
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
+    \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points. 
     \Function{seq\_k-means}{$p, N, K$}
     \State Randomly generate $K$ points as cluster centroids $c[]$
     \While {!termination\_condition }
+    \For {i = 1..N}
+    \For {j = 1..K}
+    \For {dd = 1..d}
+    \State $distance += (p(i)(dd) - c(j)(dd))^2$
+    \EndFor
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Assign each point to the nearest cluster centroid
-    \State Recompute the new cluster centroids
+    \State Accumulate $p(i)$'s coordinates
+    \State Divide the accumulated coords by num\_points to get the new centroid
+    \EndFor
+    \State Recalculate termination condition
     \EndWhile
     \EndFunction
   \end{algorithmic}
   \begin{compactitem}
-    \vspace{.5in}
-    \item{Suppose the algorithm runs m iterations. Time complexity: O(NKdm)}
+    \vspace{.1in}
+  \item{Suppose the algorithm runs m iterations. Time complexity: O(NKdm)}
   \end{compactitem}
 \end{slide}
 
@@ -175,7 +186,7 @@ fleqn]{powerdot}
 
 \begin{slide}{K-means with matrix operation}
   \begin{compactitem}
-  \item{Implement using cuBlas}
+  \item{Implement using cuBLAS}
   \item{Matrix-matrix multiplication -- cublasSgemm}
   \item{Vector norm -- cublasSnrm2}
   \item{cublasSnrm2 is pretty slow but cublasSgemm is efficient
@@ -185,7 +196,7 @@ fleqn]{powerdot}
   }
   \item{Use matrix multiplication to compute vector norm of all rows of matrix
     \begin{compactitem}
-    \item{For a matrix A, the norm of each row of matrix is at the diagonal of A * A'}
+    \item{For a matrix A, the norm of each row of matrix is at the diagonal of $A * A^T$}
     \item{For example: 
       $
       \begin{bmatrix}
@@ -235,13 +246,29 @@ fleqn]{powerdot}
   \end{algorithmic}
 \end{slide}
 
+\begin{slide}{Optimization: CUDA Memory Hierachy}
+\end{slide}
+
+\begin{slide}{Optimization: Coalesced Memory Access}
+\end{slide}
+
+\begin{slide}{Optimization: High-Bandwidth Memory}
+\end{slide}
+
+\begin{slide}{Optimization: Prefetching}
+\end{slide}
+
 \begin{slide}{Evaluation platform and implementation}
+  \footnotesize
   \begin{compactitem}
   \item{Nvidia M2090 GPU
     \begin{compactitem}
     \item{Fermi architecture}
-    \item{CUDA 6.5 Driver, 5.0 Runtime}
+    \item{CUDA 6.5 Driver, 5.0 Runtime and cuBLAS}
     \item{Nvidia driver 340.29}
+    \item{16 Multiprocessors, 32 threads per wrap, 48 wraps per multiprocessor, 1536 threads per
+      multiprocessor. In total, 24576 threads}
+    \item{Maximum 1024 threads per block}
     \end{compactitem}
   }
   \item{Intel Xeon X5680 3.33 Hz processor}
@@ -250,10 +277,25 @@ fleqn]{powerdot}
     \item{Runs faster in a GPU with a GPU with the same architecture using CUDA 6.5}  
     \end{compactitem}
   }
+  \item{Test strong and weak scaling for the first parallel algorithm}
+  \item{Cannot control how many threads cuBLAS is using
+    \begin{compactitem}
+    \item{Compare performance among three parallel algorithms with the same input size}
+    \end{compactitem}
+  }
+  \item{Different initial centroid assignment may lead to different number of iterations
+    \begin{compactitem}
+    \item{Enforce same number of iterations and same number of centroids}
+    \end{compactitem}
+  }
   \end{compactitem}
 \end{slide}
 
 \begin{slide}{Strong Scalability}
+  \begin{compactitem}
+  \item{Input size: 640000 points, 40 dimension. }
+  \item{120 centroids, 50 iterations}  
+  \end{compactitem}
   \scriptsize
   \begin{table}[ht]
   \centering
@@ -282,6 +324,10 @@ fleqn]{powerdot}
 \end{slide}
 
 \begin{slide}{Weak Scalability}
+  \begin{compactitem}
+  \item{Each point with 40 dimension. 120 centroids and run 50 iterations}
+  \item{Each thread handle one point}
+  \end{compactitem}
   \scriptsize
   \begin{table}[ht]
   \centering
@@ -307,6 +353,10 @@ fleqn]{powerdot}
 \end{slide}
 
 \begin{slide}{Comparison between sequential and three parallel algorithms}
+  \begin{compactitem}
+  \item{Each point with 40 dimension. 120 centroids and run 50 iterations}
+  \item{One point per thread for the first parallel algorithm}
+  \end{compactitem}
   \tiny
   \begin{table}[!h]
   \centering
