@@ -1,8 +1,18 @@
-\section{Sequential Algorithm}
 K-means clustering is an NP-hard problem in general Euclidean space 
-$\mathbb{R}^d$~\cite{k-means-euclidean}
-and even for instances on a plane~\cite{k-means-plane}. The sequential
-algorithm below is a heuristic algorithm which does not guarantee
+$\mathbb{R}^d$~\cite{k-means-euclidean},
+and even for instances on a plane~\cite{k-means-plane}. 
+In this report, we describe a heuristic algorithm for K-means and its 
+sequential and parallel variants.
+We first describe the sequential version of the algorithm, and discuss three 
+different ways to parallelize it. Their computation complexity is calculated and
+compared.
+Then, we describe some architecture-related optimization used during
+the implementation.
+Finally, we evaluate the sequential implementation on CPU,
+and the three parallel implementations on GPU with CUDA platform.
+
+\section{Sequential Algorithm}
+The sequential algorithm below is a heuristic algorithm which does not guarantee
 a global optimal. 
 
 \begin{algorithm}
