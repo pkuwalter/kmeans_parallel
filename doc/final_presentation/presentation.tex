@@ -149,7 +149,7 @@ fleqn]{powerdot}
     $\sum\limits_{k}^d p_{ik}^2$ and $\sum\limits_{k}^d c_{jk}^2$ are vector norm of each row of matrix p and c
   }
   \item{
-    $\sum\limits_{k}^d p_{ik}*c_{jk}$ is p' * c
+    $\sum\limits_{k}^d p_{ik}*c_{jk}$ is $p * c^T$
   }
   \item{Computing distance of each point to each centroid can be restructured as matrix operation}
   \end{compactitem}
@@ -162,16 +162,16 @@ fleqn]{powerdot}
     \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
     \State Randomly choose $K$ points as cluster centroids $c[]$
     \For {i = 1..N}
-    \State $p\_norm^2(i) = \norm{p(i))}^2$
+    \State $p\_norm\_2(i) = \norm{p(i))}^2$
     \EndFor
     \While {! termination\_condition}
     \For {j = 1..K}
-    \State $c\_norm^2(j) = \norm{(c(j))}^2$
+    \State $c\_norm\_2(j) = \norm{(c(j))}^2$
     \EndFor
     \State $pc\_product = 2 p \cdot c^T$
     \ParFor {i = 1..N}
     \For {j = 1..K}
-    \State $distance = p\_norm^2(i) + c\_norm^2(j) - pc\_product(i)(j)$
+    \State $distance = p\_norm\_2(i) + c\_norm\_2(j) - pc\_product(i)(j)$
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
@@ -191,7 +191,7 @@ fleqn]{powerdot}
   \item{Vector norm -- cublasSnrm2}
   \item{cublasSnrm2 is pretty slow but cublasSgemm is efficient
     \begin{compactitem}
-    \item{Need to calculate vector norm of each row of matrix but no such function in cuBlas}
+    \item{Need to calculate vector norm of each row of matrix but no such function in cuBLAS}
     \end{compactitem}
   }
   \item{Use matrix multiplication to compute vector norm of all rows of matrix
@@ -271,7 +271,7 @@ fleqn]{powerdot}
 \end{slide}
 
 \begin{slide}{Evaluation platform and implementation}
-  \footnotesize
+  \small
   \begin{compactitem}
   \item{Nvidia M2090 GPU
     \begin{compactitem}
@@ -304,107 +304,38 @@ fleqn]{powerdot}
 \end{slide}
 
 \begin{slide}{Strong Scalability}
-%  \begin{compactitem}
-%  \item{Input size: 640000 points, 40 dimension. }
-%  \item{120 centroids, 50 iterations}  
-%  \end{compactitem}
-%  \scriptsize
-%  \begin{table}[ht]
-%  \centering
-%  \begin{tabular}{|c|c|c|c|c|c|c|}
-%    \hline
-%    Number of threads	& 1000	    & 2000	    & 4000	& 8000	& 16000 & 32000\\
-%    \hline
-%    Points per thread 	&640	&320	&160	&80	&40	&20 \\
-%    \hline
-%    Time (s)	 & 71.100505	& 39.540554	& 23.712905	& 16.106382	& 14.376102	& 14.406176	\\
-%    \hline
-%  \end{tabular}
-%  \label{tab:strong-scaling}
-%  \caption{Strong scaling test for the first parallel algorithm}
-%\end{table}
-%\end{slide}
-
   \begin{compactitem}
-  \item{We fix the total size of input, and change ?}
-  \item{Input: 640,000 40-dimensional points, 120 centroids}
-  \item{Configuration: ? threads/TB, or ? TB if you fix t/TB}
+  \item{Input size: 640000 points, 40 dimension. 120 centroids, 50 iterations}
+  \item{Configuration: 1024 threads/TB}
   \end{compactitem}
-
-\begin{figure}[!h]
-  \centering
-  \includegraphics[width=0.7\linewidth]{fig/strong_scaling}
-  \caption{Strong scaling test for the first parallel algorithm}
-  \label{fig:strong_scaling}
-\end{figure}
+  \begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{fig/strong_scaling}
+    \caption{Strong scaling test for the first parallel algorithm}
+    \label{fig:strong_scaling}
+  \end{figure}
 \end{slide}
 
 \begin{slide}{Weak Scalability}
-%  \scriptsize
-%  \begin{table}[ht]
-%  \centering
-%  \begin{tabular}{|c|c|c|c|c|c|c|}
-%    \hline
-%    Number of points	& 1000	& 2000	& 4000	& 8000	& 16000	& 32000 \\
-%    \hline
-%    Time (s)	 &4.959575	&4.995409	&4.990718	&5.086688	&5.214874	&5.493174\\
-%    \hline
-%  \end{tabular}
-%  \label{tab:weak-scaling}
-%  \caption{Weak scaling test for the first parallel algorithm}
-%\end{table}
-
-%  \begin{compactitem}
-%  \item{Each point with 40 dimension. 120 centroids and run 50 iterations}
-%  \item{Each thread handle one point}
-%  \end{compactitem}
-
   \begin{compactitem}
   \item{The input size is propotinal to the total number of threads}
-  \item{Input: 40-dimensional points, 120 centroids, ? points/TB}
-  \item{Configuration: ? threads/TB}
+  \item{Input: 40-dimensional points, 120 cluster centroids, 128 points/TB}
+  \item{Configuration: 128 threads/TB}
   \end{compactitem}
-
-\begin{figure}[!h]
-  \centering
-  \includegraphics[width=0.7\linewidth]{fig/weak_scaling}
-  \caption{Weak scaling test for the first parallel algorithm}
-  \label{fig:weak_scaling}
-\end{figure}
+  \begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{fig/weak_scaling}
+    \caption{Weak scaling test for the first parallel algorithm}
+    \label{fig:weak_scaling}
+  \end{figure}
 \end{slide}
 
 \begin{slide}{Comparison between sequential and three parallel algorithms}
-
-%  \tiny
-%  \begin{table}[!h]
-%  \centering
-%  \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
-%    \hline
-%    {}& Number of points	& 10000	& 20000	& 40000	& 80000	& 160000	& 320000	& 640000 \\
-%    \hline
-%    \multirow{4}{*}{Time(s)}	& sequential	& 13.342	& 26.397	& 52.528	& 105.078	& 210.116	& 420.287	& 840.637 \\
-%    \cline{2-9}
-%	  & parallel v1	& 5.150	& 5.335	& 5.569	& 6.213	& 7.277	& 9.324	& 13.883 \\
-%    \cline{2-9}
-%	  & parallel v2	& 5.914	& 6.603	& 7.931	& 10.267	& 15.380	& 25.137	& 44.042 \\
-%    \cline{2-9}
-%	  & parallel v3	& 5.308	& 5.559	& 6.049	& 6.932	& 8.956	& 12.662	& 20.017 \\
-%    \hline
-%  \end{tabular}
-%  \label{tab:comparison}
-%  \caption{Comparison of running time between sequential and three versions of parallel algorithms}
-%\end{table}
-
-%  \begin{compactitem}
-%  \item{Each point with 40 dimension. 120 centroids and run 50 iterations}
-%  \item{One point per thread for the first parallel algorithm}
-%  \end{compactitem}
-
   \begin{compactitem}
-  \item{Input: 40-dimensional points, 120 cluster centroids}
-  \item{Configuration: ? threads/TB, ? TB}
+  \item{Each point with 40 dimension. 120 centroids and run 50 iterations}
+  \item{Handle one point per thread for the first parallel algorithm}
+  \item{Configuration: 1024 threads/TB}
   \end{compactitem}
-
   \begin{figure}[!h]
     \centering
     \includegraphics[width=0.7\linewidth]{fig/all_comparison}
