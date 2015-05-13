@@ -78,10 +78,10 @@ Such a parallelization is shown in Algorithm~\ref{par_m}:
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
     \State Randomly choose $K$ points as cluster centroids $c[]$
-    \While {! termination\_condition}
     \For {i = 1..N}
     \State $p\_norm^2(i) = \norm{p(i))}^2$
     \EndFor
+    \While {! termination\_condition}
     \For {j = 1..K}
     \State $c\_norm^2(j) = \norm{(c(j))}^2$
     \EndFor
@@ -135,8 +135,8 @@ $A * A^T$. The details are shown in Algorithm~\ref{par_vn_m}.
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix-v2}{$p, N, K$} \label{alg:pm2}
     \State Randomly choose $K$ points as cluster centroids $c[]$
-    \While {! termination\_condition}
     \State $p\_norm\_2 = diag(p * p^T)$
+    \While {! termination\_condition}
     \State $c\_norm\_2 = diag(c * c^T)$
     \State $pc\_product = 2 p \cdot c^T$
     \ParFor {i = 1..N}
