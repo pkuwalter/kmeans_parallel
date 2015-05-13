@@ -77,7 +77,7 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide} {Sequential Algorithm}
+\begin{slide} {Sequential Algorithm (SA)}
   \footnotesize
   \begin{algorithmic}[1]
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points. 
@@ -105,7 +105,7 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide} {Intuitive Parallel Algorithm}
+\begin{slide} {Intuitive Parallel Algorithm (PA1)}
   \footnotesize
   \begin{algorithmic}[1]
     \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
@@ -128,13 +128,13 @@ fleqn]{powerdot}
     \EndFunction  
   \end{algorithmic}
   \begin{compactitem}
-    \vspace{5mm}
+    \vspace{2mm}
   \item{Suppose m iterations. 
     Work: O(NKdm), Depth: O(Kdm).}
   \end{compactitem}
 \end{slide}
 
-\begin{slide}{K-means with Matrix Operation}
+\begin{slide}{K-means with Matrix Operations}
   \footnotesize
   \begin{compactitem}
   \item{Another way to compute point-centroid distances:}
@@ -155,9 +155,9 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide}{K-means with Matrix Operation}
+\begin{slide}{K-means with Matrix Operations (PA2)}
   \tiny
-  \begin{algorithmic}[1]
+  \begin{algorithmic}[1] 
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
     \State Randomly choose $K$ points as cluster centroids $c[]$
@@ -182,7 +182,7 @@ fleqn]{powerdot}
     \EndWhile
     \EndFunction
   \end{algorithmic}
-  \vspace{.1cm}
+  \vspace{.3cm}
   \tiny
   \begin{compactitem}
   \item{Work = $O(Nd + Kdm + NKdm + NKm + Ndm)$}
@@ -190,26 +190,28 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide}{K-means with Matrix Operation}
+\begin{slide}{K-means with Matrix Operations: implementation}
   \begin{compactitem}
-  \item{Implement using cuBLAS}
-  \item{Matrix-matrix multiplication -- cublasSgemm}
-  \item{Vector norm -- cublasSnrm2}
-  \item{cublasSnrm2 is pretty slow but cublasSgemm is efficient
+  \item{Implemented using cuBLAS}
+  \item{Matrix-matrix multiplication -- cublasSgemm()}
     \begin{compactitem}
-    \item{Need to calculate vector norm of each row of matrix but no such function in cuBLAS}
+    \item{cublasSgemm() is highly efficient}
     \end{compactitem}
-  }
-  \item{Use matrix multiplication to compute vector norm of all rows of matrix
+  \item{Vector norm -- cublasSnrm2()}
     \begin{compactitem}
-    \item{For a matrix A, the norm of each row of matrix is at the diagonal of $A * A^T$}
+    \item{cublasSnrm2() turns out to be slow}
+    \item{Need to compute vector norm for each row of a matrix, but no such function in cuBLAS}
+    \end{compactitem}
+  \item{Improvement: Use matrix multiplication to compute vector norm for all rows in a matrix
+    \begin{compactitem}
+    \item{For a matrix A, the norm for each row of a matrix is at the diagonal of $A \cdot A^T$}
     \item{For example: 
       $
       \begin{bmatrix}
         a & b & c\\
         d & e & f
       \end{bmatrix}
-      *
+      \cdot
       \begin{bmatrix}
         a & d \\
         b & e \\
@@ -227,7 +229,7 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide}{Compute Vector Norm With Matrix Multiplication}
+\begin{slide}{Compute Vector Norm With Matrix Multiplication (PA3)}
   \scriptsize
   \begin{algorithmic}[1]
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
@@ -277,7 +279,7 @@ fleqn]{powerdot}
     \label{fig:access1}
     \end{figure}
   \item{High-speed memory: e.g. shared memory}
-  \item{Prefetching / pragma unroll}
+  \item{Prefetching / \#pragma unroll}
   \end{compactitem}
 \end{slide}
 
@@ -300,7 +302,7 @@ fleqn]{powerdot}
     \item{Runs faster in a GPU with a GPU with the same architecture using CUDA 6.5}  
     \end{compactitem}
   }
-  \item{Test strong and weak scaling for the first parallel algorithm}
+\item{Test strong and weak scaling for parallel algorithm (PA1)}
   \item{Cannot control how many threads cuBLAS is using
     \begin{compactitem}
     \item{Compare performance among three parallel algorithms with the same input size}
@@ -322,7 +324,7 @@ fleqn]{powerdot}
   \begin{figure}[!h]
     \centering
     \includegraphics[width=0.7\linewidth]{fig/strong_scaling}
-    \caption{Strong scaling test for the first parallel algorithm}
+    \caption{Strong scaling test for parallel algorithm (PA1)}
     \label{fig:strong_scaling}
   \end{figure}
 \end{slide}
@@ -336,7 +338,7 @@ fleqn]{powerdot}
   \begin{figure}[!h]
     \centering
     \includegraphics[width=0.7\linewidth]{fig/weak_scaling}
-    \caption{Weak scaling test for the first parallel algorithm}
+    \caption{Weak scaling test for parallel algorithm (PA1)}
     \label{fig:weak_scaling}
   \end{figure}
 \end{slide}
@@ -344,7 +346,7 @@ fleqn]{powerdot}
 \begin{slide}{Comparison between Sequential and Three Parallel Algorithms}
   \begin{compactitem}
   \item{Each point with 40 dimension. 120 centroids and run 50 iterations}
-  \item{Handle one point per thread for the first parallel algorithm}
+  \item{Handle one point per thread for parallel algorithm (PA1)}
   \item{Configuration: 1024 threads/TB}
   \end{compactitem}
   \begin{figure}[!h]
