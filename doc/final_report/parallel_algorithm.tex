@@ -2,17 +2,37 @@
 An obvious way to parallelize the algorithm is to parallelize the
 parts for membership assignment and recomputation on new centroids.
 
-There are two ways to compute distance between point $p(i)$
-and centroid $c(j)$. Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ and $c(j) = (c_{j1},
-c_{j2}, ..., c_{jd})$, the squared Euclidean distance between point p(i) and centroid c(j): 
-\begin{align}
-d(p(i),c(j)) &= (p_{i1} - c_{j1})^2 + (p_{i2} - c_{j2})^2 + ... + (p_{id} - c_{jd})^2 \label{e1}\\
-&= (p_{i1}^2 + p_{i2}^2 + ... + p_{id}^2) - (2*p_{i1}*c_{j1} + 2*p_{i2}*c_{j2} + ... + 2*p_{id}*c_{jd})
-+ (c_{j1}^2 + c_{j2}^2 + ... + c_{jd}^2) \label{e2}
-\end{align}
+There are generally two ways to compute distance between a point $p(i)$
+and centroid $c(j)$. Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ 
+and $c(j) = (c_{j1}, c_{j2}, ..., c_{jd})$, the squared Euclidean distance 
+between point p(i) and centroid c(j) can be computed as: 
+\begin{align*}
+  dist^2(p(i),c(j)) &= (\vec{p_i} - \vec{c_i})^2 \\
+                 &= \sum\limits_{k}^d (p_{ik} - c_{jk})^2 \numberthis \label{e1}\\
+             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i} + \norm{\vec{c_i}}^2 \\
+             &= \sum\limits_{k}^d p_{ik}^2 - 2 \sum\limits_{k}^d p_{ik}*c_{jk} + \sum\limits_{k}^d c_{jk}^2 \numberthis \label{e2}
+\end{align*}
 
-\subsection{Pure CUDA implementation}
-Algorithm implements \ref{e1} is listed in Algorithm~\ref{par}. 
+This leads to two categories of parallel implementation, respectively using 
+(\ref{e1}) and (\ref{e2}). Their computational complexity under the big O notation
+is the same. But theoretically their number of floating point computations has a 
+constant time's difference. Besides, when using (\ref{e2}), we can utilize
+the \textbf{CuBLAS} library known as highly performant. Section~\ref{ss:pure} falls
+into the first category, which intuitively uses (\ref{e1}) and implementes
+a native and hand-tuned kernel. Both Section~\ref{ss:cublas} and ~\ref{ss:mix}
+use (\ref{e2}). While Section~\ref{ss:cublas} uses \textbf{CuBLAS} library 
+functions for computing both matrix inner product and vector norms, 
+Section~\ref{ss:mix} implements its own vector norm function by computing the 
+outer product of the matrix comprised by vectors, which turns out to be much 
+efficient than \textbf{CuBLAS}'s own implementation.
+
+
+\subsection{Intuitive CUDA implementation}
+\label{ss:pure}
+
+One intuitive parallel algorithm, which computes the distance using (\ref{e1}), 
+is described as Algorithm~\ref{par}. 
+
 \begin{algorithm}[!h]
   \caption{Parallel k-means clustering} \label{par}
   \begin{algorithmic}[1]
@@ -36,10 +56,15 @@ Algorithm implements \ref{e1} is listed in Algorithm~\ref{par}.
     \EndFunction  
   \end{algorithmic}
 \end{algorithm}
+
 Suppose m is the number of iterations in a run. The work-depth model for this algorithm is:
 Work = O(NKdm), Depth = O(Kdm).
 
+
+
 \subsection{Parallel K-means implementation using matrix operation}
+\label{ss:cublas}
+
 \ref{e2} can be structured as vector norm of each row of matrix (norm of p(i) and c(j)) and
 a matrix-matrix multiplication (p * c). The algorithm is shown in~\ref{par_m}
 \begin{algorithm}[!h]
@@ -76,7 +101,11 @@ We implement algorithm~\ref{par_m} using cublasSgemm for matrix matrix multiplic
 for vector norm and evaluate the performance of this algorithm.
 We find that calculating the vector norm using cublasSnrm2 is pretty slow while matrix-matrix multiplication is really fast.
 
+
+
 \subsection{Computing vector norm using matrix-matrix multiplication}
+\label{ss:mix}
+
 Given that there are no provided function to calculate the
 norm of each row of a matrix simultaneous, we come up with an idea to implement vector norm using matrix-
 matrix multiplication. For a matrix A, the norm of each row of matrix is at the diagonal of A * A'. The

@@ -4,7 +4,7 @@ and even for instances on a plane~\cite{k-means-plane}.
 In this report, we describe a heuristic algorithm for K-means and its 
 sequential and parallel variants.
 We first describe the sequential version of the algorithm, and discuss three 
-different ways to parallelize it. Their computation complexity is calculated and
+different ways to parallelize it. Their computational complexity is calculated and
 compared.
 Then, we describe some architecture-related optimization used during
 the implementation.
@@ -18,7 +18,7 @@ a global optimal.
 \begin{algorithm}
   \caption{Sequential k-means clustering} \label{seq}
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
+    \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points. 
     \Function{seq\_k-means}{$p, N, K$}
     \State Randomly generate $K$ points as cluster centroids $c[]$
     \While {!termination\_condition }
@@ -31,7 +31,7 @@ a global optimal.
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Assign each point to the nearest cluster centroid
     \State Accumulate $p(i)$'s coordinates
-    \State divide the accumulated coords by num\_points to get the new centroid
+    \State Divide the accumulated coords by num\_points to get the new centroid
     \EndFor
     \EndWhile
     \EndFunction
@@ -40,5 +40,5 @@ a global optimal.
 
 \vspace{5mm}
 \noindent
-Suppose m is the number of iterations in a run. \\
-The complexity of this algorithm is O(NKdm). 
+Suppose $m$ is the number of iterations in a run. \\
+The complexity of this algorithm is $O(NKdm)$. 
