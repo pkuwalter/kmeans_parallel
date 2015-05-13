@@ -256,13 +256,18 @@ fleqn]{powerdot}
 
 \end{slide}
 
-\begin{slide}{Optimization: Coalesced Memory Access}
-\end{slide}
-
-\begin{slide}{Optimization: High-Bandwidth Memory}
-\end{slide}
-
-\begin{slide}{Optimization: Prefetching}
+\begin{slide}{Optimizations}
+  \begin{compactitem}
+  \item{Coalesced memory access to global memory}
+    \begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{fig/access1}
+    \caption{Sequential and aligned access}
+    \label{fig:access1}
+    \end{figure}
+  \item{High-speed memory: e.g. shared memory}
+  \item{Prefetching / pragma unroll}
+  \end{compactitem}
 \end{slide}
 
 \begin{slide}{Evaluation platform and implementation}
