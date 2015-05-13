@@ -1,4 +1,4 @@
-\section{Architecture-Related Optimizations}
+\section{Architecture-related optimizations}
 \label{s:optimization}
 
 When tuning the program performance, we use several
@@ -6,7 +6,7 @@ GPU architecture-related optimizations. Especially, coalesced memory access
 benefits the most, followed by the usage of high-speed memory regions and
 prefetching.
 
-\subsection{CUDA Memory Hierachy}
+\subsection{CUDA memory hierachy}
 
 CUDA threads can access data from several different memory regions in GPU. Each 
 thread has its own local and private memory. Each \TB has its own shared
@@ -21,7 +21,7 @@ The access to the global memory is generally the slowest and dependent on the
 access pattern. A coalesced access can help achieve higher throughput
 ~\cite{kepler-tuning}. 
 
-\subsection{Coalesced Memory Access}
+\subsection{Coalesced memory access}
 
 For example, according to GPU's SIMD pattern, when threads in a \TB are each 
 handling the computation over one single data point and tranverse over coordinates,
@@ -38,7 +38,7 @@ access in a later computational kernel without an extra matrix transposition.
   (p \cdot c^T)^T &= c \cdot p^T
 \end{align*}
 
-\subsection{High-Bandwidth Memory}
+\subsection{High-bandwidth memory}
 
 We load the cluster centroids into shared memory. Since centroids are sharedly 
 used by computations of all threads in the kernel, spending the highly restricted

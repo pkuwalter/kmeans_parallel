@@ -9,7 +9,7 @@ between point p(i) and centroid c(j) can be computed as:
 \begin{align*}
   dist^2(p(i),c(j)) &= (\vec{p_i} - \vec{c_i})^2 \\
                  &= \sum\limits_{k}^d (p_{ik} - c_{jk})^2 \numberthis \label{e1}\\
-             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i} + \norm{\vec{c_i}}^2 \\
+             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i^T} + \norm{\vec{c_i}}^2 \\
              &= \sum\limits_{k}^d p_{ik}^2 - 2 \sum\limits_{k}^d p_{ik}*c_{jk} + \sum\limits_{k}^d c_{jk}^2 \numberthis \label{e2}
 \end{align*}
 
@@ -17,21 +17,21 @@ This leads to two categories of parallel implementation, respectively using
 (\ref{e1}) and (\ref{e2}). Their computational complexity under the big O notation
 is the same. But theoretically their number of floating point computations has a 
 constant time's difference. Besides, when using (\ref{e2}), we can utilize
-the \textbf{CuBLAS} library known as highly performant. Section~\ref{ss:pure} falls
+the cuBLAS library known as highly performant. Section~\ref{ss:pure} falls
 into the first category, which intuitively uses (\ref{e1}) and implementes
 a native and hand-tuned kernel. Both Section~\ref{ss:cublas} and ~\ref{ss:mix}
-use (\ref{e2}). While Section~\ref{ss:cublas} uses \textbf{CuBLAS} library 
+use (\ref{e2}). While Section~\ref{ss:cublas} uses cuBLAS library 
 functions for computing both matrix inner product and vector norms, 
 Section~\ref{ss:mix} implements its own vector norm function by computing the 
-outer product of the matrix comprised by vectors, which turns out to be much 
-efficient than \textbf{CuBLAS}'s own implementation.
+product of the matrix comprised by vectors, which turns out to be much 
+efficient than cuBLAS's own implementation.
 
 
 \subsection{Intuitive CUDA implementation}
 \label{ss:pure}
 
-One intuitive parallel algorithm, which computes the distance using (\ref{e1}), 
-is described as Algorithm~\ref{par}. 
+One intuitive parallel implementation, which computes the distance 
+using (\ref{e1}), is described as Algorithm~\ref{par}. 
 
 \begin{algorithm}[!h]
   \caption{Parallel k-means clustering} \label{par}
@@ -57,33 +57,38 @@ is described as Algorithm~\ref{par}.
   \end{algorithmic}
 \end{algorithm}
 
-Suppose m is the number of iterations in a run. The work-depth model for this algorithm is:
-Work = O(NKdm), Depth = O(Kdm).
+\vspace{5mm}
+\noindent
+Suppose $m$ is the number of iterations in a run. The work-depth model for this algorithm is: \\
+Work = $O(NKdm)$, Depth = $O(Kdm)$.
 
 
 
-\subsection{Parallel K-means implementation using matrix operation}
+\subsection{CUDA implementation with cuBLAS}
 \label{ss:cublas}
 
-\ref{e2} can be structured as vector norm of each row of matrix (norm of p(i) and c(j)) and
-a matrix-matrix multiplication (p * c). The algorithm is shown in~\ref{par_m}
+By using \ref{e2}, we can utilize two functions provided by cuBLAS.
+$\norm{\vec{p_i}}$ and $\norm{\vec{c_i}}$ are calculated by \textbf{cublasSgemm()},
+and $2\vec{p_i} \cdot \vec{c_i^T}$ by \textbf{cublasSnrm2()}.
+Such a parallelization is shown in Algorithm~\ref{par_m}:
+
 \begin{algorithm}[!h]
-  \caption{Parallel k-means clustering using matrix operation} \label{par_m}
+  \caption{Parallel k-means clustering using cuBLAS} \label{par_m}
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
     \State Randomly choose $K$ points as cluster centroids $c[]$
     \While {! termination\_condition}
     \For {i = 1..N}
-    \State $p\_norm(i) = norm(p(i))$
+    \State $p\_norm^2(i) = \norm{p(i))}^2$
     \EndFor
     \For {j = 1..K}
-    \State $c\_norm(j) = norm(c(j))$
+    \State $c\_norm^2(j) = \norm{(c(j))}^2$
     \EndFor
-    \State $pc\_product = 2 .* p' * c$
+    \State $pc\_product = 2 p \cdot c^T$
     \ParFor {i = 1..N}
     \For {j = 1..K}
-    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
+    \State $distance = p\_norm^2(i) + c\_norm^2(j) - pc\_product(i)(j)$
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
@@ -95,35 +100,48 @@ a matrix-matrix multiplication (p * c). The algorithm is shown in~\ref{par_m}
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
-The work-depth model for this algorithm is: Work = O(2Ndm + Kdm + NKdm + NKm), Depth = O($D(norm(d))*N*m + (norm(d))*K*m + D(matrix product(NKd))*m + Km + dm$).
 
-We implement algorithm~\ref{par_m} using cublasSgemm for matrix matrix multiplication and cublasSnrm2
-for vector norm and evaluate the performance of this algorithm.
-We find that calculating the vector norm using cublasSnrm2 is pretty slow while matrix-matrix multiplication is really fast.
+\vspace{5mm}
+\noindent
+The work-depth model for this algorithm is: \\
+Work = $O(2Ndm + Kdm + NKdm + NKm)$ \\
+Depth = $O(D(norm(d))*N*m + (norm(d))*K*m + D(matrix product(NKd))*m + Km + dm)$.
+
+\vspace{3mm}
+
+Since we do not know the internal of cuBLAS implementions, we put place holder
+in depth for algorithm~\ref{par_m}\ref{par_vn_m}. 
+
+After the implementation, we find that it is even slower than Algorithm~\ref{par}.
+Although \textbf{cublasSgemm()} is highly efficient, \textbf{cublasSnrm2()} 
+turns out to be very slow, causing performance degradation.
+Therefore, we implemented our own \textbf{norm\_2()} as described in 
+Section~\ref{ss:mix}.
 
 
-
-\subsection{Computing vector norm using matrix-matrix multiplication}
+\subsection{Mixed cuBLAS with customized functions}
 \label{ss:mix}
 
-Given that there are no provided function to calculate the
-norm of each row of a matrix simultaneous, we come up with an idea to implement vector norm using matrix-
-matrix multiplication. For a matrix A, the norm of each row of matrix is at the diagonal of A * A'. The
-algorithm is shown in~\ref{par_vn_m}. 
-\begin{algorithm}[!htp]
-  \caption{Parallel k-means clustering using matrix operation with vector norm calculating using
-    matrix-matrix multiplication} \label{par_vn_m}
+Given that there are no native cuBLAS function to collectively calculate the
+sqaures of norms for each row of a matrix, and that \textbf{cublasSnrm2()} is
+not performant enough, we implement our own square of norm function by utilizing
+the high performant \textbf{cublasSgemm()}.
+Actually, for a matrix A, the norms of each row can be got at the diagonal of 
+$A * A^T$. The details are shown in Algorithm~\ref{par_vn_m}. 
+
+\begin{algorithm}[!h]
+  \caption{Parallel k-means clustering, using matrix product to compute norm} \label{par_vn_m}
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix-v2}{$p, N, K$} \label{alg:pm2}
     \State Randomly choose $K$ points as cluster centroids $c[]$
     \While {! termination\_condition}
-    \State $p\_norm = diag(p * p')$
-    \State $c\_norm = diag(c * c')$
-    \State $pc\_product = 2 .* p' * c$
+    \State $p\_norm\_2 = diag(p * p^T)$
+    \State $c\_norm\_2 = diag(c * c^T)$
+    \State $pc\_product = 2 p \cdot c^T$
     \ParFor {i = 1..N}
     \For {j = 1..K}
-    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
+    \State $distance = p\_norm\_2(i) + c\_norm\_2(j) - pc\_product(i)(j)$
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
@@ -135,7 +153,9 @@ algorithm is shown in~\ref{par_vn_m}.
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
-The work depth model for this algorithm is: Work = O($N^2dm + K^2dm + NKdm + NKm$),
-Depth = O($D(matrix product(N^2d))*m + D(matrix product(K^2d)*m) + D(matrix product(NKd))*m+ Km + dm$).
-We do not know how cuBlas implements matrix-matrix multiplication and vector norm, so we put place holder
-in depth for algorithm~\ref{par_m}\ref{par_vn_m}. 
+
+\vspace{5mm}
+\noindent
+The work depth model for this algorithm is: \\
+Work = $O(N^2dm + K^2dm + NKdm + NKm)$, \\
+Depth = $O(D(matrix product(N^2d))*m + D(matrix product(K^2d)*m) + D(matrix product(NKd))*m+ Km + dm)$.
