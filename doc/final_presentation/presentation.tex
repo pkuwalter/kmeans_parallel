@@ -1,0 +1,354 @@
+\documentclass[
+nopagebreaks,
+style=klope,
+fleqn]{powerdot}
+\usepackage{amsmath, amsfonts}
+\usepackage{hyperref}
+\usepackage{breakurl}
+\usepackage{paralist}
+\usepackage{subfig}
+\usepackage{algpseudocode}
+\usepackage{algorithmicx}
+\usepackage{algorithm}
+\usepackage{multirow}
+\title{K-Means Clustering on GPU}
+\author{Yige Hu and Zhiting Zhu}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% declaration of the new block
+\algblock{ParFor}{EndParFor}
+% customizing the new block
+\algnewcommand\algorithmicparfor{\textbf{parfor}}
+\algnewcommand\algorithmicpardo{\textbf{do}}
+\algnewcommand\algorithmicendparfor{\textbf{end\ parfor}}
+\algrenewtext{ParFor}[1]{\algorithmicparfor\ #1\ \algorithmicpardo}
+\algrenewtext{EndParFor}{\algorithmicendparfor}
+
+\algnewcommand\algorithmicinput{\textbf{INPUT:}}
+\algnewcommand\INPUT{\item[\algorithmicinput]}
+
+\newcommand{\TB}[0]{threadblock\xspace}
+\newcommand{\TBs}[0]{threadblocks\xspace}
+\newcommand{\SM}[0]{streaming multiprocessor\xspace}
+\newcommand{\SMs}[0]{streaming multiprocessors\xspace}
+\newcommand{\gcc}[0]{gcc\xspace}
+\newcommand{\clang}[0]{clang\xspace}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+
+\begin{slide} {Problem}
+  \begin{compactitem}
+  \item{Input: a set of data points $\{x_i|i = 1..n\} \subseteq
+    \mathbb{R}^d $}
+  \item{Task: partition the n data points
+    in to k($\leq n$) sets S = $\{S_1, S_2, ..., S_k\}$ so as to minimize
+    the within-cluster sum of squared
+    errors, $$\arg\min_{S}\sum_{i=1}^{k}\sum_{x \in S_i} \parallel x -
+    \mu(S_i)\parallel$$ where $\mu(S_i)$ is the mean of points in $S_i$}
+  \item{NP-hard problem for global optimal solution
+    \begin{compactitem}
+    \item{In general d dimension Euclidean space even with 2 clusters~\cite{k-means-euclidean}}
+    \item{k clusters in the same plane~\cite{k-means-plane}}
+    \end{compactitem}
+  }
+  \item{Heuristic algorithm}
+  \end{compactitem}
+  \vspace{-0.6in}
+  \begin{figure}
+    \flushright
+    \includegraphics[scale=.5]{fig/K_Means_Example_Step_4.eps}
+  \end{figure}
+\end{slide}
+
+\begin{slide} {Sequential Algorithm: example}
+  \begin{figure}[h]
+    \centering
+    \subfloat[t][~\cite{f1}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_1.eps}}\qquad
+    \subfloat[t][~\cite{f2}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_2.eps}}\\
+    \subfloat[t][~\cite{f3}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_3.eps}}\qquad
+    \subfloat[t][~\cite{f4}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_4.eps}}
+  \end{figure}
+  \begin{compactitem}
+  \item{Problem size: $N$ $d$-dimensional data points, put into $K$ clusters.}
+  \end{compactitem}
+\end{slide}
+
+\begin{slide} {Sequential Algorithm}
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points. 
+    \Function{seq\_k-means}{$p, N, K$}
+    \State Randomly generate $K$ points as cluster centroids $c[]$
+    \While {!termination\_condition }
+    \State Assign each point to the nearest cluster centroid
+    \State Recompute the new cluster centroids
+    \EndWhile
+    \EndFunction
+  \end{algorithmic}
+  \begin{compactitem}
+    \vspace{.5in}
+    \item{Suppose the algorithm runs m iterations. Time complexity: O(NKdm)}
+  \end{compactitem}
+\end{slide}
+
+\begin{slide} {Intuitive Parallel Algorithm}
+  \footnotesize
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \Function{par\_k-means}{$p, N, K$} \label{alg:p}
+    \State Randomly choose $K$ points as cluster centroids $c[]$
+    \While {! termination\_condition}
+    \ParFor {i = 1..N}
+    \For {j = 1..K}
+    \For {dd = 1..d}
+    \State $distance += (p(i)(dd) - c(j)(dd))^2$
+    \EndFor
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
+    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
+    \EndParFor
+    \State Compute new $c[]$: divide the accumulated coords by num\_points
+    \State Recalculate termination condition
+    \EndWhile
+    \EndFunction  
+  \end{algorithmic}
+  \begin{compactitem}
+    \vspace{5mm}
+  \item{Suppose m iterations. 
+    Work: O(NKdm), Depth: O(Kdm).}
+  \end{compactitem}
+\end{slide}
+
+\begin{slide}{K-means with Matrix Operation}
+  \footnotesize
+  \begin{compactitem}
+  \item{Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ and $c(j) = (c_{j1},
+    c_{j2}, ..., c_{jd})$, the squared Euclidean distance between point p(i) and centroid c(j) is: 
+    \begin{align}
+      dist^2(p(i),c(j)) &= (\vec{p_i} - \vec{c_i})^2 \\
+                 &= \sum\limits_{k}^d (p_{ik} - c_{jk})^2  \label{e1}\\
+             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i} + \norm{\vec{c_i}}^2  \nonumber\\
+             &= \sum\limits_{k}^d p_{ik}^2 - 2 \sum\limits_{k}^d p_{ik}*c_{jk} + \sum\limits_{k}^d c_{jk}^2 \label{e2}
+  \end{align}}
+  \item{
+    $\sum\limits_{k}^d p_{ik}^2$ and $\sum\limits_{k}^d c_{jk}^2$ are vector norm of each row of matrix p and c
+  }
+  \item{
+    $\sum\limits_{k}^d p_{ik}*c_{jk}$ is p' * c
+  }
+  \item{Computing distance of each point to each centroid can be restructured as matrix operation}
+  \end{compactitem}
+\end{slide}
+
+\begin{slide}{K-means with matrix operation}
+  \scriptsize
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
+    \State Randomly choose $K$ points as cluster centroids $c[]$
+    \While {! termination\_condition}
+    \For {i = 1..N}
+    \State $p\_norm(i) = norm(p(i))$
+    \EndFor
+    \For {j = 1..K}
+    \State $c\_norm(j) = norm(c(j))$
+    \EndFor
+    \State $pc\_product = 2 .* p' * c$
+    \ParFor {i = 1..N}
+    \For {j = 1..K}
+    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
+    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
+    \EndParFor
+    \State Compute new $c[]$: divide the accumulated coords by num\_points
+    \State Recalculate termination condition
+    \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{slide}
+
+\begin{slide}{K-means with matrix operation}
+  \begin{compactitem}
+  \item{Implement using cuBlas}
+  \item{Matrix-matrix multiplication -- cublasSgemm}
+  \item{Vector norm -- cublasSnrm2}
+  \item{cublasSnrm2 is pretty slow but cublasSgemm is efficient
+    \begin{compactitem}
+    \item{Need to calculate vector norm of each row of matrix but no such function in cuBlas}
+    \end{compactitem}
+  }
+  \item{Use matrix multiplication to compute vector norm of all rows of matrix
+    \begin{compactitem}
+    \item{For a matrix A, the norm of each row of matrix is at the diagonal of A * A'}
+    \item{For example: 
+      $
+      \begin{bmatrix}
+        a & b & c\\
+        d & e & f
+      \end{bmatrix}
+      *
+      \begin{bmatrix}
+        a & d \\
+        b & e \\
+        c & f
+      \end{bmatrix}
+      =
+      \begin{bmatrix}
+        a^2+b^2+c^2 & ad + be + cf \\
+        ad + be + cf & d^2 + e^2 + f^2
+      \end{bmatrix}
+      $
+    }  
+    \end{compactitem}
+  } 
+  \end{compactitem}
+\end{slide}
+
+\begin{slide}{Compute Vector Norm With Matrix Multiplication}
+  \footnotesize
+  \begin{algorithmic}[1]
+    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \Function{par\_k-means-matrix-v2}{$p, N, K$} \label{alg:pm2}
+    \State Randomly choose $K$ points as cluster centroids $c[]$
+    \While {! termination\_condition}
+    \State $p\_norm = diag(p * p')$
+    \State $c\_norm = diag(c * c')$
+    \State $pc\_product = 2 .* p' * c$
+    \ParFor {i = 1..N}
+    \For {j = 1..K}
+    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
+    \EndFor
+    \State Find the nearest centroid $c_{nearest}$ for $p(i)$
+    \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
+    \State Accumulate $p(i)$'s coordinates to the cluster's new centroid
+    \EndParFor
+    \State Compute new $c[]$: divide the accumulated coords by num\_points
+    \State Recalculate termination condition
+    \EndWhile
+    \EndFunction
+  \end{algorithmic}
+\end{slide}
+
+\begin{slide}{Evaluation platform and implementation}
+  \begin{compactitem}
+  \item{Nvidia M2090 GPU
+    \begin{compactitem}
+    \item{Fermi architecture}
+    \item{CUDA 6.5 Driver, 5.0 Runtime}
+    \item{Nvidia driver 340.29}
+    \end{compactitem}
+  }
+  \item{Intel Xeon X5680 3.33 Hz processor}
+  \item{Performance is influenced by GPU hardware and CUDA version
+    \begin{compactitem}
+    \item{Runs faster in a GPU with a GPU with the same architecture using CUDA 6.5}  
+    \end{compactitem}
+  }
+  \end{compactitem}
+\end{slide}
+
+\begin{slide}{Strong Scalability}
+  \scriptsize
+  \begin{table}[ht]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+    Number of threads	& 1000	    & 2000	    & 4000	& 8000	& 16000 & 32000\\
+    \hline
+    Points per thread 	&640	&320	&160	&80	&40	&20 \\
+    \hline
+    Time (s)	 & 71.100505	& 39.540554	& 23.712905	& 16.106382	& 14.376102	& 14.406176	\\
+    \hline
+  \end{tabular}
+  \label{tab:strong-scaling}
+  \caption{Strong scaling test for the first parallel algorithm}
+\end{table}
+\end{slide}
+
+\begin{slide}{Strong Scalability}
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=\linewidth]{fig/strong_scaling}
+  \caption{Strong scaling test for the first parallel algorithm}
+  \label{fig:strong_scaling}
+\end{figure}
+
+\end{slide}
+
+\begin{slide}{Weak Scalability}
+  \scriptsize
+  \begin{table}[ht]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+    Number of points	& 1000	& 2000	& 4000	& 8000	& 16000	& 32000 \\
+    \hline
+    Time (s)	 &4.959575	&4.995409	&4.990718	&5.086688	&5.214874	&5.493174\\
+    \hline
+  \end{tabular}
+  \label{tab:weak-scaling}
+  \caption{Weak scaling test for the first parallel algorithm}
+\end{table}
+\end{slide}
+
+\begin{slide}{Weak Scalability}
+  \begin{figure}[!h]
+    \centering
+    \includegraphics[width=\linewidth]{fig/weak_scaling}
+    \caption{Weak scaling test for the first parallel algorithm}
+    \label{fig:weak_scaling}
+  \end{figure}
+\end{slide}
+
+\begin{slide}{Comparison between sequential and three parallel algorithms}
+  \tiny
+  \begin{table}[!h]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+    \hline
+    {}& Number of points	& 10000	& 20000	& 40000	& 80000	& 160000	& 320000	& 640000 \\
+    \hline
+    \multirow{4}{*}{Time(s)}	& sequential	& 13.342	& 26.397	& 52.528	& 105.078	& 210.116	& 420.287	& 840.637 \\
+    \cline{2-9}
+	  & parallel v1	& 5.150	& 5.335	& 5.569	& 6.213	& 7.277	& 9.324	& 13.883 \\
+    \cline{2-9}
+	  & parallel v2	& 5.914	& 6.603	& 7.931	& 10.267	& 15.380	& 25.137	& 44.042 \\
+    \cline{2-9}
+	  & parallel v3	& 5.308	& 5.559	& 6.049	& 6.932	& 8.956	& 12.662	& 20.017 \\
+    \hline
+  \end{tabular}
+  \label{tab:comparison}
+  \caption{Comparison of running time between sequential and three versions of parallel algorithms}
+\end{table}
+\end{slide}
+
+\begin{slide}{Comparison between sequential and three parallel algorithms}
+  \begin{figure}[!h]
+    \centering
+    \includegraphics[width=\linewidth]{fig/all_comparison}
+    \caption{Comparison of running time between sequential and three versions of parallel algorithms}
+    \label{fig:all}
+  \end{figure}
+\end{slide}
+
+\begin{slide}{Comparison between three parallel algorithms}
+  \begin{figure}[!h]
+    \centering  
+    \includegraphics[width=\linewidth]{fig/parallel_algorithm_comparison}
+    \caption{Comparison of three parallel algorithms}
+    \label{fig:par}
+  \end{figure}
+\end{slide}
+
+\begin{slide} {References}
+\footnotesize
+\bibliographystyle{acm}
+\bibliography{bibliography}
+\end{slide}
+\end{document}
