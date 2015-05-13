@@ -386,6 +386,7 @@ float **kmeans(float **points, int num_points, int num_coords, int num_clusters,
   for (i = 0; i < num_points; i ++) {
     stat = cublasSetVector(num_coords, sizeof(float), points[i], 1, d_vector, 1);
     stat = cublasSnrm2(handle, num_coords, d_vector, 1, &point_norm[i]);
+    point_norm[i] = point_norm[i] * point_norm[i];
   }
 
 	// K-mean calculation
@@ -452,6 +453,7 @@ start = GetTimeMius64();
     for (i = 0; i < num_clusters; i ++) {
       stat = cublasSetVector(num_coords, sizeof(float), retval[i], 1, d_vector, 1);
       stat = cublasSnrm2(handle, num_coords, d_vector, 1, &cluster_norm[i]);
+      cluster_norm[i] = cluster_norm[i] * cluster_norm[i];
     }
 
 		cudaDeviceSynchronize();
