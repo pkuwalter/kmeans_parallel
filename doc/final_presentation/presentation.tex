@@ -147,20 +147,20 @@ fleqn]{powerdot}
 \begin{slide}{K-means with matrix operation}
   \scriptsize
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
     \State Randomly choose $K$ points as cluster centroids $c[]$
-    \While {! termination\_condition}
     \For {i = 1..N}
-    \State $p\_norm(i) = norm(p(i))$
+    \State $p\_norm^2(i) = \norm{p(i))}^2$
     \EndFor
+    \While {! termination\_condition}
     \For {j = 1..K}
-    \State $c\_norm(j) = norm(c(j))$
+    \State $c\_norm^2(j) = \norm{(c(j))}^2$
     \EndFor
-    \State $pc\_product = 2 .* p' * c$
+    \State $pc\_product = 2 p \cdot c^T$
     \ParFor {i = 1..N}
     \For {j = 1..K}
-    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
+    \State $distance = p\_norm^2(i) + c\_norm^2(j) - pc\_product(i)(j)$
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
@@ -213,16 +213,16 @@ fleqn]{powerdot}
 \begin{slide}{Compute Vector Norm With Matrix Multiplication}
   \footnotesize
   \begin{algorithmic}[1]
-    \INPUT $K$: Number of clusters; $N$: number of d-dimensional data points; $p$: data points.
+    \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix-v2}{$p, N, K$} \label{alg:pm2}
     \State Randomly choose $K$ points as cluster centroids $c[]$
+    \State $p\_norm\_2 = diag(p * p^T)$
     \While {! termination\_condition}
-    \State $p\_norm = diag(p * p')$
-    \State $c\_norm = diag(c * c')$
-    \State $pc\_product = 2 .* p' * c$
+    \State $c\_norm\_2 = diag(c * c^T)$
+    \State $pc\_product = 2 p \cdot c^T$
     \ParFor {i = 1..N}
     \For {j = 1..K}
-    \State $distance = p\_norm(i) + c\_norm(j) - pc\_product(i)(j)$
+    \State $distance = p\_norm\_2(i) + c\_norm\_2(j) - pc\_product(i)(j)$
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
