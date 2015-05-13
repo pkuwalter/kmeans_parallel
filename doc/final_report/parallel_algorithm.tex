@@ -7,9 +7,9 @@ and centroid $c(j)$. Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$
 and $c(j) = (c_{j1}, c_{j2}, ..., c_{jd})$, the squared Euclidean distance 
 between point p(i) and centroid c(j) can be computed as: 
 \begin{align*}
-  dist^2(p(i),c(j)) &= (\vec{p_i} - \vec{c_i})^2 \\
+  dist^2(p(i),c(j)) &= \norm{\vec{p_i} - \vec{c_i}}^2 \\
                  &= \sum\limits_{k}^d (p_{ik} - c_{jk})^2 \numberthis \label{e1}\\
-             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i^T} + \norm{\vec{c_i}}^2 \\
+             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i}^T + \norm{\vec{c_i}}^2 \\
              &= \sum\limits_{k}^d p_{ik}^2 - 2 \sum\limits_{k}^d p_{ik}*c_{jk} + \sum\limits_{k}^d c_{jk}^2 \numberthis \label{e2}
 \end{align*}
 
@@ -69,7 +69,7 @@ Work = $O(NKdm)$, Depth = $O(Kdm)$.
 
 By using \ref{e2}, we can utilize two functions provided by cuBLAS.
 $\norm{\vec{p_i}}$ and $\norm{\vec{c_i}}$ are calculated by \textbf{cublasSgemm()},
-and $2\vec{p_i} \cdot \vec{c_i^T}$ by \textbf{cublasSnrm2()}.
+and $2\vec{p_i} \cdot \vec{c_i}^T$ by \textbf{cublasSnrm2()}.
 Such a parallelization is shown in Algorithm~\ref{par_m}:
 
 \begin{algorithm}[!h]
