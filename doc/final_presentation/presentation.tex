@@ -137,24 +137,26 @@ fleqn]{powerdot}
 \begin{slide}{K-means with Matrix Operation}
   \footnotesize
   \begin{compactitem}
-  \item{Suppose $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ and $c(j) = (c_{j1},
-    c_{j2}, ..., c_{jd})$, the squared Euclidean distance between point p(i) and centroid c(j) is: 
+  \item{Another way to compute point-centroid distances:}
+  \item{Suppose we have a single point $p(i) = (p_{i1}, p_{i2}, ..., p_{id})$ 
+      and a cluster centroid $c(j) = (c_{j1}, c_{j2}, ..., c_{jd})$, 
+      the squared Euclidean distance between p(i) and c(j) is: 
     \begin{align}
       dist^2(p(i),c(j)) &= \norm{\vec{p_i} - \vec{c_i}}^2 \\
-             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i}^T + \norm{\vec{c_i}}^2 \\
+             &= \norm{\vec{p_i}}^2 - 2 \vec{p_i} \cdot \vec{c_i}^T + \norm{\vec{c_i}}^2
   \end{align}}
   \item{
-      $\norm{\vec{p_i}}$ and $\norm{\vec{c_i}}$ are vector norms of each row of the matrices p and c
+      $\norm{\vec{p_i}}$ and $\norm{\vec{c_i}}$ are vector norms for each row of the matrices p and c
   }
   \item{
       $\vec{p_i} \cdot \vec{c_i}^T$ is a matrix production 
   }
-  \item{Computing distance between each point with each centroid can be restructured as matrix operations: norm and production}
+  \item{Computing the distance between each point with each centroid can be restructured as matrix operations: norm and production}
   \end{compactitem}
 \end{slide}
 
 \begin{slide}{K-means with Matrix Operation}
-  \scriptsize
+  \tiny
   \begin{algorithmic}[1]
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
@@ -346,6 +348,7 @@ fleqn]{powerdot}
   \item{Configuration: 1024 threads/TB}
   \end{compactitem}
   \begin{figure}[!h]
+    \captionsetup{font=scriptsize}
     \centering
     \includegraphics[width=0.7\linewidth]{fig/all_comparison}
     \caption{Comparison of running time between sequential and three versions of parallel algorithms}
