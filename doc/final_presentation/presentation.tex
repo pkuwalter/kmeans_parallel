@@ -64,7 +64,7 @@ fleqn]{powerdot}
   \end{figure}
 \end{slide}
 
-\begin{slide} {Sequential Algorithm: example}
+\begin{slide} {Sequential Algorithm: Example}
   \begin{figure}[h]
     \centering
     \subfloat[t][~\cite{f1}]{\includegraphics[scale=.5]{fig/K_Means_Example_Step_1.eps}}\qquad
@@ -155,7 +155,7 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide}{K-means with matrix operation}
+\begin{slide}{K-means with Matrix Operation}
   \scriptsize
   \begin{algorithmic}[1]
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
@@ -190,7 +190,7 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide}{K-means with matrix operation}
+\begin{slide}{K-means with Matrix Operation}
   \begin{compactitem}
   \item{Implement using cuBLAS}
   \item{Matrix-matrix multiplication -- cublasSgemm}
@@ -281,7 +281,7 @@ fleqn]{powerdot}
   \end{compactitem}
 \end{slide}
 
-\begin{slide}{Evaluation platform and implementation}
+\begin{slide}{Evaluation Platform and Implementation}
   \small
   \begin{compactitem}
   \item{Nvidia M2090 GPU
@@ -341,7 +341,7 @@ fleqn]{powerdot}
   \end{figure}
 \end{slide}
 
-\begin{slide}{Comparison between sequential and three parallel algorithms}
+\begin{slide}{Comparison between Sequential and Three Parallel Algorithms}
   \begin{compactitem}
   \item{Each point with 40 dimension. 120 centroids and run 50 iterations}
   \item{Handle one point per thread for the first parallel algorithm}
@@ -355,7 +355,7 @@ fleqn]{powerdot}
   \end{figure}
 \end{slide}
 
-\begin{slide}{Comparison between three parallel algorithms}
+\begin{slide}{Comparison between Three Parallel Algorithms}
   \begin{figure}[!h]
     \centering  
     \includegraphics[width=0.9\linewidth]{fig/parallel_algorithm_comparison}
