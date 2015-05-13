@@ -104,8 +104,8 @@ Such a parallelization is shown in Algorithm~\ref{par_m}:
 \vspace{5mm}
 \noindent
 The work-depth model for this algorithm is: \\
-Work = $O(2Ndm + Kdm + NKdm + NKm)$ \\
-Depth = $O(D(norm(d))*N*m + (norm(d))*K*m + D(matrix product(NKd))*m + Km + dm)$.
+Work = $O(Nd + Kdm + NKdm + NKm + Ndm)$ \\
+Depth = $O(D(norm(d))*N + (norm(d))*K*m + D(matrix product(NKd))*m + Km + dm)$.
 
 \vspace{3mm}
 
@@ -157,5 +157,5 @@ $A * A^T$. The details are shown in Algorithm~\ref{par_vn_m}.
 \vspace{5mm}
 \noindent
 The work depth model for this algorithm is: \\
-Work = $O(N^2dm + K^2dm + NKdm + NKm)$, \\
-Depth = $O(D(matrix product(N^2d))*m + D(matrix product(K^2d)*m) + D(matrix product(NKd))*m+ Km + dm)$.
+Work = $O(N^2dm + K^2dm + NKdm + NKm + Ndm)$, \\
+Depth = $O(D(matrix product(N^2d)) + D(matrix product(K^2d)*m) + D(matrix product(NKd))*m+ Km + dm)$.
