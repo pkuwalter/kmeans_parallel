@@ -20,7 +20,8 @@ impact performance measurement, so we enforce all algorithms run 50 iterations a
 120 centroids. 
 
 \subsection{Strong scaling}
-The input size is 640000 points with 40 dimension. Result is shown in Table~\ref{tab:strong-scaling}. 
+The input size is 640000 points with 40 dimension. Result is shown in Table~\ref{tab:strong-scaling} and
+Figure~\ref{fig:strong_scaling}. 
 \begin{table}[ht]
   \centering
   \begin{tabular}{|c|c|c|c|c|c|c|c|}
@@ -35,10 +36,16 @@ The input size is 640000 points with 40 dimension. Result is shown in Table~\ref
   \label{tab:strong-scaling}
   \caption{Strong scaling test for parallel algorithm~\ref{par}}
 \end{table}
- 
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=\linewidth]{fig/strong_scaling}
+  \caption{Strong scaling test for parallel algorithm~\ref{par}}
+  \label{fig:strong_scaling}
+\end{figure}
+
 \subsection{Weak scaling}
 For weak scaling, we put one point per thread. The number of points equals the total number of threads.
-Result is listed in Table~\ref{tab:weak-scaling}.
+Result is listed in Table~\ref{tab:weak-scaling} and Figure~\ref{fig:weak_scaling}.
 \begin{table}[ht]
   \centering
   \begin{tabular}{|c|c|c|c|c|c|c|c|}
@@ -51,6 +58,12 @@ Result is listed in Table~\ref{tab:weak-scaling}.
   \label{tab:weak-scaling}
   \caption{Weak scaling test for parallel algorithm~\ref{par}}
 \end{table}
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=\linewidth]{fig/weak_scaling}
+  \caption{Weak scaling test for parallel algorithm~\ref{par}}
+  \label{fig:weak_scaling}
+\end{figure}
 
 \subsection{Comparison between sequential and parallel algorithms}
 We compare sequential algorithm with three versions of parallel algorithm. For each algorithm, it
@@ -89,3 +102,7 @@ Algorithm~\ref{par}, \ref{par_m} and \ref{par_vn_m} respectively.
     \label{fig:par}
   \end{minipage}
 \end{figure}
+
+From Figure~\ref{fig:par}, the hand-turned cuda implementation runs the best, followed by implementation
+using cublas matrix-matrix multiplication and using matrix multiplication to calculate vector norm
+and the slowest is the one using cublas snorm2 for vector norm. 
