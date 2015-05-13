@@ -149,7 +149,7 @@ fleqn]{powerdot}
     $\sum\limits_{k}^d p_{ik}^2$ and $\sum\limits_{k}^d c_{jk}^2$ are vector norm of each row of matrix p and c
   }
   \item{
-    $\sum\limits_{k}^d p_{ik}*c_{jk}$ is p' * c
+    $\sum\limits_{k}^d p_{ik}*c_{jk}$ is $p * c^T$
   }
   \item{Computing distance of each point to each centroid can be restructured as matrix operation}
   \end{compactitem}
@@ -162,16 +162,16 @@ fleqn]{powerdot}
     \Function{par\_k-means-matrix}{$p, N, K$} \label{alg:pm}
     \State Randomly choose $K$ points as cluster centroids $c[]$
     \For {i = 1..N}
-    \State $p\_norm^2(i) = \norm{p(i))}^2$
+    \State $p\_norm\_2(i) = \norm{p(i))}^2$
     \EndFor
     \While {! termination\_condition}
     \For {j = 1..K}
-    \State $c\_norm^2(j) = \norm{(c(j))}^2$
+    \State $c\_norm\_2(j) = \norm{(c(j))}^2$
     \EndFor
     \State $pc\_product = 2 p \cdot c^T$
     \ParFor {i = 1..N}
     \For {j = 1..K}
-    \State $distance = p\_norm^2(i) + c\_norm^2(j) - pc\_product(i)(j)$
+    \State $distance = p\_norm\_2(i) + c\_norm\_2(j) - pc\_product(i)(j)$
     \EndFor
     \State Find the nearest centroid $c_{nearest}$ for $p(i)$
     \State Change membership of $p(i)$ to the cluster with $c_{nearest}$
@@ -266,7 +266,7 @@ fleqn]{powerdot}
 \end{slide}
 
 \begin{slide}{Evaluation platform and implementation}
-  \footnotesize
+  \small
   \begin{compactitem}
   \item{Nvidia M2090 GPU
     \begin{compactitem}
