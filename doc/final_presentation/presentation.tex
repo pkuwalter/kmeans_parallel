@@ -182,6 +182,12 @@ fleqn]{powerdot}
     \EndWhile
     \EndFunction
   \end{algorithmic}
+  \vspace{.1cm}
+  \tiny
+  \begin{compactitem}
+  \item{Work = $O(Nd + Kdm + NKdm + NKm + Ndm)$}
+  \item{Depth = $O(D(norm(d))*N + (norm(d))*K*m + D(matrix product(NKd))*m + Km + dm)$}
+  \end{compactitem}
 \end{slide}
 
 \begin{slide}{K-means with matrix operation}
@@ -222,7 +228,7 @@ fleqn]{powerdot}
 \end{slide}
 
 \begin{slide}{Compute Vector Norm With Matrix Multiplication}
-  \footnotesize
+  \scriptsize
   \begin{algorithmic}[1]
     \INPUT $K$: Number of clusters; $N$: number of $d$-dimensional data points; $p$: data points.
     \Function{par\_k-means-matrix-v2}{$p, N, K$} \label{alg:pm2}
@@ -244,6 +250,11 @@ fleqn]{powerdot}
     \EndWhile
     \EndFunction
   \end{algorithmic}
+  \vspace{.1cm}
+  \begin{compactitem}
+  \item{Work = $O(N^2d + K^2dm + NKdm + NKm + Ndm)$}
+  \item{Depth = $O(D(matrix product(N^2d)) + D(matrix product(K^2d)*m) + D(matrix product(NKd))*m+ Km + dm)$}
+  \end{compactitem}
 \end{slide}
 
 \begin{slide}{Optimization: CUDA Memory Hierachy}
